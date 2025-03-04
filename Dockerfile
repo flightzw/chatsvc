@@ -3,7 +3,7 @@ FROM golang:1.23 AS builder
 COPY . /src
 WORKDIR /src
 
-RUN GOPROXY=https://goproxy.cn make build
+RUN GOPROXY=https://goproxy.io make build
 
 FROM alpine:3.18
 
