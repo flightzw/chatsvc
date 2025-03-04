@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package chatsvc.errno;
+
+import "errors/errors.proto";
+
+option go_package = "github.com/flightzw/chatsvc/api/chatsvc/errno;errno";
+
+enum ErrorReason {
+  // 设置缺省错误码
+  option (errors.default_code) = 500;
+
+  PARAM_INVALID     = 0 [(errors.code) = 400];
+  DO_CONVERT_FAILED = 1 [(errors.code) = 500];
+  VO_CONVERT_FAILED = 2 [(errors.code) = 500];
+
+  // data action common errors
+  DATA_SAVE_FAILED   = 10 [(errors.code) = 500];
+  DATA_QUERY_FAILED  = 11 [(errors.code) = 500];
+  DATA_NOT_FOUND     = 12 [(errors.code) = 404];
+  DATA_UPDATE_FAILED = 13 [(errors.code) = 500];
+  DATA_REMOVE_FAILED = 14 [(errors.code) = 500];
+
+  // UserAPI
+  USER_REGISTER_FAILED   = 100 [(errors.code) = 500];
+  USER_NOT_FOUND         = 101 [(errors.code) = 404];
+  USER_TOKEN_SIGN_FAILED = 102 [(errors.code) = 500];
+  USER_UNAME_BE_USED     = 103 [(errors.code) = 400];
+
+  // MessageAPI
+  MESSAGE_SEND_FAILED = 110 [(errors.code) = 500];
+}

@@ -1,0 +1,618 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: ""
+    version: 0.0.1
+paths:
+    /chatsvc/v1/friends:
+        get:
+            tags:
+                - FriendService
+            description: 好友列表
+            operationId: FriendService_ListFriend
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/chatsvc.v1.ListFriendReply'
+        post:
+            tags:
+                - FriendService
+            description: 添加好友
+            operationId: FriendService_AddFriend
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/chatsvc.v1.AddFriendRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/chatsvc.v1.AddFriendReply'
+    /chatsvc/v1/friends/{friend_id}:
+        get:
+            tags:
+                - FriendService
+            description: 好友详情
+            operationId: FriendService_GetFriend
+            parameters:
+                - name: friend_id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/chatsvc.v1.GetFriendReply'
+        put:
+            tags:
+                - FriendService
+            description: 更新好友备注
+            operationId: FriendService_UpdateFriend
+            parameters:
+                - name: friend_id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/chatsvc.v1.UpdateFriendRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/chatsvc.v1.UpdateFriendReply'
+        delete:
+            tags:
+                - FriendService
+            description: 移除好友
+            operationId: FriendService_RemoveFriend
+            parameters:
+                - name: friend_id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/chatsvc.v1.RemoveFriendReply'
+    /chatsvc/v1/login:
+        post:
+            tags:
+                - LoginService
+            description: 用户登录
+            operationId: LoginService_Login
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/chatsvc.v1.LoginRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/chatsvc.v1.LoginReply'
+    /chatsvc/v1/private-messages:
+        get:
+            tags:
+                - PrivateMessageService
+            description: 查找历史消息
+            operationId: PrivateMessageService_ListPrivateMessage
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: friend_id
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: keyword
+                  in: query
+                  schema:
+                    type: string
+                - name: send_date_gte
+                  in: query
+                  schema:
+                    type: string
+                - name: send_date_lte
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/chatsvc.v1.ListPrivateMessageReply'
+    /chatsvc/v1/private-messages/offline:
+        get:
+            tags:
+                - PrivateMessageService
+            description: 拉取离线消息
+            operationId: PrivateMessageService_PullOfflinePrivateMessage
+            parameters:
+                - name: start_id
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/chatsvc.v1.PullOfflineMessageReply'
+    /chatsvc/v1/private-messages/readed:
+        put:
+            tags:
+                - PrivateMessageService
+            description: 设置消息已读
+            operationId: PrivateMessageService_ReadedPrivateMessage
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/chatsvc.v1.ReadedPrivateMessageRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/chatsvc.v1.ReadedPrivateMessageReply'
+    /chatsvc/v1/private-messages/recall/{id}:
+        put:
+            tags:
+                - PrivateMessageService
+            description: 撤回私聊消息
+            operationId: PrivateMessageService_RecallPrivateMessage
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/chatsvc.v1.RecallPrivateMessageRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/chatsvc.v1.RecallPrivateMessageReply'
+    /chatsvc/v1/private-messages/send:
+        post:
+            tags:
+                - PrivateMessageService
+            description: 发送私聊消息
+            operationId: PrivateMessageService_SendPrivateMessage
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/chatsvc.v1.SendPrivateMessageRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/chatsvc.v1.SendPrivateMessageReply'
+    /chatsvc/v1/refresh-token:
+        get:
+            tags:
+                - LoginService
+            description: 登录令牌续期
+            operationId: LoginService_RefreshToken
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/chatsvc.v1.RefreshTokenReply'
+    /chatsvc/v1/register:
+        post:
+            tags:
+                - LoginService
+            description: 用户注册
+            operationId: LoginService_Register
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/chatsvc.v1.RegisterRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/chatsvc.v1.RegisterReply'
+    /chatsvc/v1/users:
+        get:
+            tags:
+                - UserService
+            description: 用户列表
+            operationId: UserService_ListUserInfo
+            parameters:
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/chatsvc.v1.ListUserInfoReply'
+        put:
+            tags:
+                - UserService
+            description: 变更用户信息
+            operationId: UserService_UpdateUserInfo
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/chatsvc.v1.UpdateUserInfoRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/chatsvc.v1.UpdateUserInfoReply'
+    /chatsvc/v1/users/password:
+        put:
+            tags:
+                - UserService
+            description: 更改密码
+            operationId: UserService_UpdatePassword
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/chatsvc.v1.UpdatePasswordRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/chatsvc.v1.UpdatePasswordReply'
+    /chatsvc/v1/users/self:
+        get:
+            tags:
+                - UserService
+            description: 获取当前用户信息
+            operationId: UserService_GetUserSelf
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/chatsvc.v1.GetUserSelfReply'
+    /chatsvc/v1/users/{id}:
+        get:
+            tags:
+                - UserService
+            description: 获取用户信息
+            operationId: UserService_GetUserByID
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/chatsvc.v1.GetUserByIDReply'
+components:
+    schemas:
+        chatsvc.v1.AddFriendReply:
+            type: object
+            properties: {}
+        chatsvc.v1.AddFriendRequest:
+            type: object
+            properties:
+                user_id:
+                    type: integer
+                    format: int32
+        chatsvc.v1.FriendVO:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                username:
+                    type: string
+                avatar_url:
+                    type: string
+                nickname:
+                    type: string
+                gender:
+                    type: integer
+                    format: int32
+                signature:
+                    type: string
+                is_online:
+                    type: boolean
+                remark:
+                    type: string
+        chatsvc.v1.GetFriendReply:
+            type: object
+            properties:
+                data:
+                    $ref: '#/components/schemas/chatsvc.v1.FriendVO'
+        chatsvc.v1.GetUserByIDReply:
+            type: object
+            properties:
+                data:
+                    $ref: '#/components/schemas/chatsvc.v1.UserVO'
+        chatsvc.v1.GetUserSelfReply:
+            type: object
+            properties:
+                data:
+                    $ref: '#/components/schemas/chatsvc.v1.UserVO'
+        chatsvc.v1.ListFriendReply:
+            type: object
+            properties:
+                data:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/chatsvc.v1.FriendVO'
+        chatsvc.v1.ListPrivateMessageReply:
+            type: object
+            properties:
+                data:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/chatsvc.v1.PrivateMessageVO'
+                total:
+                    type: string
+        chatsvc.v1.ListUserInfoReply:
+            type: object
+            properties:
+                data:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/chatsvc.v1.UserVO'
+        chatsvc.v1.LoginReply:
+            type: object
+            properties:
+                data:
+                    $ref: '#/components/schemas/chatsvc.v1.LoginReply_Data'
+        chatsvc.v1.LoginReply_Data:
+            type: object
+            properties:
+                token:
+                    type: string
+                    description: 接口访问凭证
+                refresh_token:
+                    type: string
+                    description: 续签凭证
+        chatsvc.v1.LoginRequest:
+            type: object
+            properties:
+                username:
+                    type: string
+                    description: 用户名
+                password:
+                    type: string
+                    description: 密码
+                remember_me:
+                    type: boolean
+                    description: 是否自动续签
+        chatsvc.v1.PrivateMessageVO:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                send_id:
+                    type: integer
+                    format: int32
+                recv_id:
+                    type: integer
+                    format: int32
+                content:
+                    type: string
+                type:
+                    type: integer
+                    format: int32
+                status:
+                    type: integer
+                    format: int32
+                created_at:
+                    type: string
+        chatsvc.v1.PullOfflineMessageReply:
+            type: object
+            properties: {}
+        chatsvc.v1.ReadedPrivateMessageReply:
+            type: object
+            properties: {}
+        chatsvc.v1.ReadedPrivateMessageRequest:
+            type: object
+            properties:
+                friend_id:
+                    type: integer
+                    description: 好友 uid
+                    format: int32
+        chatsvc.v1.RecallPrivateMessageReply:
+            type: object
+            properties: {}
+        chatsvc.v1.RecallPrivateMessageRequest:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+        chatsvc.v1.RefreshTokenReply:
+            type: object
+            properties:
+                data:
+                    $ref: '#/components/schemas/chatsvc.v1.RefreshTokenReply_Data'
+        chatsvc.v1.RefreshTokenReply_Data:
+            type: object
+            properties:
+                token:
+                    type: string
+                refresh_token:
+                    type: string
+        chatsvc.v1.RegisterReply:
+            type: object
+            properties: {}
+        chatsvc.v1.RegisterRequest:
+            type: object
+            properties:
+                username:
+                    type: string
+                    description: 用户名
+                password:
+                    type: string
+                    description: 密码
+                nickname:
+                    type: string
+                    description: 昵称
+        chatsvc.v1.RemoveFriendReply:
+            type: object
+            properties: {}
+        chatsvc.v1.SendPrivateMessageReply:
+            type: object
+            properties:
+                data:
+                    $ref: '#/components/schemas/chatsvc.v1.PrivateMessageVO'
+        chatsvc.v1.SendPrivateMessageRequest:
+            type: object
+            properties:
+                type:
+                    type: integer
+                    format: int32
+                recv_id:
+                    type: integer
+                    format: int32
+                content:
+                    type: string
+        chatsvc.v1.UpdateFriendReply:
+            type: object
+            properties: {}
+        chatsvc.v1.UpdateFriendRequest:
+            type: object
+            properties:
+                friend_id:
+                    type: integer
+                    format: int32
+                remark:
+                    type: string
+        chatsvc.v1.UpdatePasswordReply:
+            type: object
+            properties: {}
+        chatsvc.v1.UpdatePasswordRequest:
+            type: object
+            properties:
+                old_password:
+                    type: string
+                    description: 旧密码
+                new_password:
+                    type: string
+                    description: 新密码
+        chatsvc.v1.UpdateUserInfoReply:
+            type: object
+            properties: {}
+        chatsvc.v1.UpdateUserInfoRequest:
+            type: object
+            properties:
+                nickname:
+                    type: string
+                    description: 昵称
+                gender:
+                    type: integer
+                    description: 性别
+                    format: int32
+                signature:
+                    type: string
+                    description: 个性签名
+        chatsvc.v1.UserVO:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                username:
+                    type: string
+                avatar_url:
+                    type: string
+                nickname:
+                    type: string
+                gender:
+                    type: integer
+                    format: int32
+                signature:
+                    type: string
+                is_online:
+                    type: boolean
+tags:
+    - name: FriendService
+    - name: LoginService
+      description: 登录模块
+    - name: PrivateMessageService
+      description: 私聊消息
+    - name: UserService
+      description: 用户操作

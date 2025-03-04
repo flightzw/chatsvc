@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package chatsvc.v1;
+
+import "google/api/annotations.proto";
+import "openapi/v3/annotations.proto";
+import "buf/validate/validate.proto";
+
+option go_package = "github.com/flightzw/chatsvc/api/chatsvc/v1;v1";
+
+// 登录模块
+service LoginService {
+  // 用户注册
+  rpc Register(RegisterRequest) returns (RegisterReply) {
+    option (google.api.http) = {
+      post: "/chatsvc/v1/register"
+      body: "*"
+    };
+  }
+  // 用户登录
+  rpc Login(LoginRequest) returns (LoginReply) {
+    option (google.api.http) = {
+      post: "/chatsvc/v1/login"
+      body: "*"
+    };
+  }
+  // 登录令牌续期
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenReply) {
+    option (google.api.http) = {
+      get: "/chatsvc/v1/refresh-token"
+    };
+  }
+}
+
+message RegisterRequest {
+  string username = 1 [
+    (openapi.v3.property)    = { description: "用户名" },
+    (buf.validate.field).cel = {
+      id: "register_req.username",
+      expression: "!this.matches('^[a-zA-Z0-9]+$') ? '用户名仅允许包含字母或数字' : ''"
+    },
+    (buf.validate.field).cel = {
+      id: "register_req.username",
+      expression: "(this.size() < 6 || this.size() > 20) ? '用户名长度必须在6-20个字符之间' : ''"
+    }
+  ];
+  string password = 2 [
+    (openapi.v3.property)    = { description: "密码" },
+    (buf.validate.field).cel = {
+      id: "register_req.password",
+      expression: "!this.matches('^[a-zA-Z0-9!@#$%^&*]+$') ? '密码仅允许包含字母、数字或特殊字符：!@#$%^&*' : ''"
+    },
+    (buf.validate.field).cel = {
+      id: "register_req.password",
+      expression: "(this.size() < 10 || this.size() > 20) ? '密码长度必须在10-20个字符之间' : ''"
+    }
+  ];
+  string nickname = 3 [
+    (openapi.v3.property)    = { description: "昵称" },
+    (buf.validate.field).cel = {
+      id: "register_req.nickname",
+      expression: "(this.size() < 2 || this.size() > 10) ? '昵称长度不得小于2或大于10个字符' : ''"
+    }
+  ];
+}
+
+message RegisterReply {}
+
+message LoginRequest {
+  string username = 1 [
+    (openapi.v3.property)    = { description: "用户名" },
+    (buf.validate.field).cel = {
+      id: "register_req.username",
+      expression: "!this.matches('^[a-zA-Z0-9]+$') ? '用户名仅允许包含字母或数字' : ''"
+    },
+    (buf.validate.field).cel = {
+      id: "register_req.username",
+      expression: "(this.size() < 6 || this.size() > 20) ? '用户名长度必须在6-20个字符之间' : ''"
+    }
+  ];
+  string password = 2 [
+    (openapi.v3.property)    = { description: "密码" },
+    (buf.validate.field).cel = {
+      id: "register_req.password",
+      expression: "!this.matches('^[a-zA-Z0-9!@#$%^&*]+$') ? '密码仅允许包含字母、数字或特殊字符：!@#$%^&*' : ''"
+    },
+    (buf.validate.field).cel = {
+      id: "register_req.password",
+      expression: "(this.size() < 10 || this.size() > 20) ? '密码长度必须在10-20个字符之间' : ''"
+    }
+  ];
+  bool remember_me = 3 [(openapi.v3.property) = { description: "是否自动续签" }];
+}
+
+message LoginReply {
+  message Data {
+    string token         = 1 [(openapi.v3.property) = { description: "接口访问凭证" }];
+    string refresh_token = 2 [(openapi.v3.property) = { description: "续签凭证" }];
+  }
+  Data data = 1;
+}
+
+message RefreshTokenRequest {}
+
+message RefreshTokenReply {
+  message Data {
+    string token         = 1;
+    string refresh_token = 2;
+  }
+  Data data = 1;
+}

@@ -1,0 +1,114 @@
+syntax = "proto3";
+
+package chatsvc.v1;
+
+import "google/api/annotations.proto";
+import "openapi/v3/annotations.proto";
+import "buf/validate/validate.proto";
+
+option go_package = "github.com/flightzw/chatsvc/api/chatsvc/v1;v1";
+
+// 私聊消息
+service PrivateMessageService {
+  // 发送私聊消息
+  rpc SendPrivateMessage(SendPrivateMessageRequest) returns (SendPrivateMessageReply) {
+    option (google.api.http) = {
+      post: "/chatsvc/v1/private-messages/send"
+      body: "*"
+    };
+  }
+  // 撤回私聊消息
+  rpc RecallPrivateMessage(RecallPrivateMessageRequest) returns (RecallPrivateMessageReply) {
+    option (google.api.http) = {
+      put: "/chatsvc/v1/private-messages/recall/{id}"
+      body: "*"
+    };
+  }
+  // 拉取离线消息
+  rpc PullOfflinePrivateMessage(PullOfflineMessageRequest) returns (PullOfflineMessageReply) {
+    option (google.api.http) = {
+      get: "/chatsvc/v1/private-messages/offline"
+    };
+  }
+  // 设置消息已读
+  rpc ReadedPrivateMessage(ReadedPrivateMessageRequest) returns (ReadedPrivateMessageReply) {
+    option (google.api.http) = {
+      put: "/chatsvc/v1/private-messages/readed"
+      body: "*"
+    };
+  }
+  // 查找历史消息
+  rpc ListPrivateMessage(ListPrivateMessageRequest) returns (ListPrivateMessageReply) {
+    option (google.api.http) = {
+      get: "/chatsvc/v1/private-messages"
+    };
+  }
+}
+
+message PrivateMessageVO {
+  int32  id         = 1;
+  int32  send_id    = 2;
+  int32  recv_id    = 3;
+  string content    = 4;
+  int32  type       = 5;
+  int32  status     = 6;
+  string created_at = 7;
+}
+
+message SendPrivateMessageRequest {
+  int32 type = 1 [(buf.validate.field).cel = { id: "send.type", expression: "this <= 0 ? '消息类型无效' : ''" }];
+  int32 recv_id = 2
+      [(buf.validate.field).cel = { id: "send.recv_id", expression: "this <= 0 ? '消息接收者id无效' : ''" }];
+  string content = 3 [
+    (buf.validate.field).cel = { id: "send.content", expression: "this == '' ? '消息内容不得为空' : ''" },
+    (buf.validate.field).cel = {
+      id: "send.content",
+      expression: "this.size() > 512 ? '消息内容长度不得超过512个字符' : ''"
+    }
+  ];
+}
+
+message SendPrivateMessageReply {
+  PrivateMessageVO data = 1;
+}
+
+message RecallPrivateMessageRequest {
+  int32 id = 1;
+}
+
+message RecallPrivateMessageReply {}
+
+message PullOfflineMessageRequest {
+  int32 start_id = 1 [(openapi.v3.property) = { description: "消息起始 id" }];
+}
+
+message PullOfflineMessageReply {}
+
+message ReadedPrivateMessageRequest {
+  int32 friend_id = 1 [
+    (openapi.v3.property)    = { description: "好友 uid" },
+    (buf.validate.field).cel = { id: "readed.friend_id", expression: "this <= 0 ? '必须提供有效的好友uid' : ''" }
+  ];
+}
+
+message ReadedPrivateMessageReply {}
+
+message ListPrivateMessageRequest {
+  int32 page      = 1;
+  int32 page_size = 2;
+  int32 friend_id = 3 [
+    (openapi.v3.property)    = { description: "好友 uid" },
+    (buf.validate.field).cel = { id: "list.friend_id", expression: "this <= 0 ? '必须提供有效的好友uid' : ''" }
+  ];
+  string keyword = 4 [
+    (openapi.v3.property) = { description: "消息内容" },
+    (buf.validate.field).cel = { id: "list.keyword", expression: "this.size() > 10 ? '消息内容不得超过10个字符' : ''" }
+  ];
+  string send_date_gte = 5 [(openapi.v3.property) = { description: "起始发送日期" }];
+  string send_date_lte = 6 [(openapi.v3.property) = { description: "截止发送日期" }];
+}
+
+message ListPrivateMessageReply {
+  repeated PrivateMessageVO data  = 1;
+  int64                     total = 2;
+}

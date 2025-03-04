@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package chatsvc.model;
+
+import "openapi/v3/annotations.proto";
+
+option go_package = "github.com/flightzw/chatsvc/api/chatsvc/model;model";
+
+message Friend {
+  option (openapi.v3.schema) = {
+    required: [ "id", "friend_id", "nickname", "avatar_url", "created_at" ]
+  };
+  int32  id         = 1;
+  int32  friend_id  = 2 [(openapi.v3.property) = { title: "好友uid" }];
+  string nickname   = 3 [(openapi.v3.property) = { title: "昵称" }];
+  string avatar_url = 4 [(openapi.v3.property) = { title: "头像url" }];
+  string created_at = 5 [(openapi.v3.property) = { title: "创建时间" }];
+}

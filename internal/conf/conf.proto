@@ -1,0 +1,51 @@
+syntax = "proto3";
+package kratos.api;
+
+option go_package = "github.com/flightzw/chatsvc/internal/conf;conf";
+
+import "google/protobuf/duration.proto";
+
+message Bootstrap {
+  Server server = 1;
+  Data   data   = 2;
+}
+
+message Server {
+  message HTTP {
+    string                   network = 1;
+    string                   addr    = 2;
+    google.protobuf.Duration timeout = 3;
+  }
+  message GRPC {
+    string                   network = 1;
+    string                   addr    = 2;
+    google.protobuf.Duration timeout = 3;
+  }
+  message JWT {
+    message Token {
+      string prifile   = 1;
+      string pubfile   = 2;
+      int32  expire_in = 3;
+    }
+    Token access_token  = 1;
+    Token refresh_token = 2;
+  }
+  HTTP http = 1;
+  GRPC grpc = 2;
+  JWT  jwt  = 3;
+}
+
+message Data {
+  message Database {
+    string driver = 1;
+    string source = 2;
+  }
+  message Redis {
+    string addr     = 1;
+    string password = 2;
+    int32  db       = 3;
+  }
+  Database database = 1;
+  Redis    redis    = 2;
+  string   env      = 10;
+}

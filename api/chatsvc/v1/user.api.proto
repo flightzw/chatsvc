@@ -1,0 +1,133 @@
+syntax = "proto3";
+
+package chatsvc.v1;
+
+import "google/api/annotations.proto";
+import "openapi/v3/annotations.proto";
+import "buf/validate/validate.proto";
+
+option go_package = "github.com/flightzw/chatsvc/api/chatsvc/v1;v1";
+
+// 用户操作
+service UserService {
+  // 获取当前用户信息
+  rpc GetUserSelf(GetUserSelfRequest) returns (GetUserSelfReply) {
+    option (google.api.http) = {
+      get: "/chatsvc/v1/users/self"
+    };
+  }
+  // 变更用户信息
+  rpc UpdateUserInfo(UpdateUserInfoRequest) returns (UpdateUserInfoReply) {
+    option (google.api.http) = {
+      put: "/chatsvc/v1/users"
+      body: "*"
+    };
+  }
+  // 获取用户信息
+  rpc GetUserByID(GetUserByIDRequest) returns (GetUserByIDReply) {
+    option (google.api.http) = {
+      get: "/chatsvc/v1/users/{id}"
+    };
+  }
+  // 用户列表
+  rpc ListUserInfo(ListUserInfoRequest) returns (ListUserInfoReply) {
+    option (google.api.http) = {
+      get: "/chatsvc/v1/users"
+    };
+  }
+
+  // 更改密码
+  rpc UpdatePassword(UpdatePasswordRequest) returns (UpdatePasswordReply) {
+    option (google.api.http) = {
+      put: "/chatsvc/v1/users/password"
+      body: "*"
+    };
+  }
+}
+
+message UserVO {
+  int32  id         = 1;
+  string username   = 2;
+  string avatar_url = 3;
+  string nickname   = 4;
+  int32  gender     = 5;
+  string signature  = 6;
+  bool   is_online  = 7;
+}
+
+message GetUserSelfRequest {}
+
+message GetUserSelfReply {
+  UserVO data = 1;
+}
+
+message UpdateUserInfoRequest {
+  string nickname = 1 [
+    (openapi.v3.property)    = { description: "昵称" },
+    (buf.validate.field).cel = {
+      id: "update_user.nickname",
+      expression: "(this.size() < 2 || this.size() > 10) ? '昵称长度不得小于2或大于10个字符' : ''"
+    }
+  ];
+  int32 gender = 2 [
+    (openapi.v3.property)    = { description: "性别" },
+    (buf.validate.field).cel = {
+      id: "update_user.gender",
+      expression: "(this < 0 || this > 2) ? '性别类型值无效' : ''"
+    }
+  ];
+  string signature = 3 [
+    (openapi.v3.property)    = { description: "个性签名" },
+    (buf.validate.field).cel = {
+      id: "update_user.signature",
+      expression: "this.size() > 200 ? '个性签名长度不得超过 200 个字' : ''"
+    }
+  ];
+}
+
+message UpdateUserInfoReply {}
+
+message GetUserByIDRequest {
+  int32 id = 1;
+}
+
+message GetUserByIDReply {
+  UserVO data = 1;
+}
+
+message ListUserInfoRequest {
+  string name = 1 [
+    (openapi.v3.property) = { description: "用户名/昵称" },
+    (buf.validate.field).cel = { id: "list_user.name", expression: "this == '' ? '必须提供查询用户名/昵称' : ''" }
+  ];
+}
+message ListUserInfoReply {
+  repeated UserVO data = 1;
+}
+
+message UpdatePasswordRequest {
+  string old_password = 1 [
+    (openapi.v3.property)    = { description: "旧密码" },
+    (buf.validate.field).cel = {
+      id: "update_password.old_password",
+      expression: "!this.matches('^[a-zA-Z0-9!@#$%^&*]+$') ? '密码仅允许包含字母、数字或特殊字符：!@#$%^&*' : ''"
+    },
+    (buf.validate.field).cel = {
+      id: "update_password.old_password",
+      expression: "(this.size() < 10 || this.size() > 20) ? '密码长度必须在10-20个字符之间' : ''"
+    }
+  ];
+  string new_password = 2 [
+    (openapi.v3.property)    = { description: "新密码" },
+    (buf.validate.field).cel = {
+      id: "update_password.new_password",
+      expression: "!this.matches('^[a-zA-Z0-9!@#$%^&*]+$') ? '密码仅允许包含字母、数字或特殊字符：!@#$%^&*' : ''"
+    },
+    (buf.validate.field).cel = {
+      id: "update_password.new_password",
+      expression: "(this.size() < 10 || this.size() > 20) ? '密码长度必须在10-20个字符之间' : ''"
+    }
+  ];
+}
+
+message UpdatePasswordReply {}

@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package chatsvc.model;
+
+import "openapi/v3/annotations.proto";
+
+option go_package = "github.com/flightzw/chatsvc/api/chatsvc/model;model";
+
+message User {
+  option (openapi.v3.schema) = {
+    required : [ "id", "friend_id", "nickname", "avatar_url", "created_at" ]
+  };
+  int32 id = 1;
+}

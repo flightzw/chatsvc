@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package chatsvc.v1;
+
+import "google/api/annotations.proto";
+import "openapi/v3/annotations.proto";
+import "buf/validate/validate.proto";
+
+option go_package = "github.com/flightzw/chatsvc/api/chatsvc/v1;v1";
+
+service FriendService {
+  // 添加好友
+  rpc AddFriend(AddFriendRequest) returns (AddFriendReply) {
+    option (google.api.http) = {
+      post: "/chatsvc/v1/friends"
+      body: "*"
+    };
+  }
+  // 好友详情
+  rpc GetFriend(GetFriendRequest) returns (GetFriendReply) {
+    option (google.api.http) = {
+      get: "/chatsvc/v1/friends/{friend_id}"
+    };
+  }
+  // 好友列表
+  rpc ListFriend(ListFriendRequest) returns (ListFriendReply) {
+    option (google.api.http) = {
+      get: "/chatsvc/v1/friends"
+    };
+  }
+  // 更新好友备注
+  rpc UpdateFriend(UpdateFriendRequest) returns (UpdateFriendReply) {
+    option (google.api.http) = {
+      put: "/chatsvc/v1/friends/{friend_id}"
+      body: "*"
+    };
+  }
+  // 移除好友
+  rpc RemoveFriend(RemoveFriendRequest) returns (RemoveFriendReply) {
+    option (google.api.http) = {
+      delete: "/chatsvc/v1/friends/{friend_id}"
+    };
+  }
+}
+
+message FriendVO {
+  int32  id         = 1;
+  string username   = 2;
+  string avatar_url = 3;
+  string nickname   = 4;
+  int32  gender     = 5;
+  string signature  = 6;
+  bool   is_online  = 7;
+  string remark     = 8;
+}
+
+message AddFriendRequest {
+  int32 user_id = 1;
+}
+
+message AddFriendReply {}
+
+message GetFriendRequest {
+  int32 friend_id = 1;
+}
+
+message GetFriendReply {
+  FriendVO data = 1;
+}
+
+message ListFriendRequest {}
+
+message ListFriendReply {
+  repeated FriendVO data = 1;
+}
+
+message UpdateFriendRequest {
+  int32  friend_id = 1;
+  string remark    = 2;
+}
+
+message UpdateFriendReply {}
+
+message RemoveFriendRequest {
+  int32 friend_id = 1 [
+    (openapi.v3.property) = { description: "好友 uid" },
+    (buf.validate.field).cel = { id: "remove_friend.friend_id", expression: "this <= 0 ? '必须指定有效的用户id' : ''" }
+  ];
+}
+
+message RemoveFriendReply {}
