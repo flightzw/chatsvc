@@ -15,4 +15,4 @@ EXPOSE 8000
 
 VOLUME /data/conf
 
-CMD ["./server", "-conf", "/data/conf"]
+CMD ["./chatsvc", "-conf", "/data/conf"]

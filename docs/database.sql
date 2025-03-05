@@ -1,4 +1,6 @@
-CREATE TABLE `users` (
+CREATE DATABASE IF NOT EXISTS `chatsvc`;
+
+CREATE TABLE IF NOT EXISTS `users` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `username` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '用户名',
   `password` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '密码',
@@ -16,7 +18,7 @@ CREATE TABLE `users` (
   UNIQUE KEY `uk_username` (`username`)
 ) ENGINE=InnoDB AUTO_INCREMENT=10008 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户';
 
-CREATE TABLE `friends` (
+CREATE TABLE IF NOT EXISTS `friends` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `user_id` int unsigned NOT NULL COMMENT '用户id',
   `friend_id` int unsigned NOT NULL COMMENT '好友id',
@@ -28,7 +30,7 @@ CREATE TABLE `friends` (
   UNIQUE KEY `uk_user_id_friend_id` (`user_id`,`friend_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='好友';
 
-CREATE TABLE `private_messages` (
+CREATE TABLE IF NOT EXISTS `private_messages` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `send_id` int unsigned NOT NULL COMMENT '用户uid',
   `recv_id` int unsigned NOT NULL COMMENT '好友uid',
