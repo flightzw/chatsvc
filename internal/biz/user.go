@@ -94,6 +94,7 @@ func (uc *UserUsecase) Register(ctx context.Context, user *User) error {
 	}
 
 	user.Password = generatePasswordStr(user.Password)
+	user.Status = enum.AccountStatusNormal
 	if _, err := uc.repo.CreateUser(ctx, user); err != nil {
 		return errno.ErrorUserRegisterFailed("用户注册时出错").WithCause(err)
 	}
