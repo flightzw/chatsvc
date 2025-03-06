@@ -44,7 +44,7 @@ func MakeChatHandleFunc(hub *SessionHub, authFunc AuthFunc) http.HandlerFunc {
 		}(loginChan)
 
 		var (
-			sessionId  string
+			sessionID  string
 			claims     jwt.Claims
 			createTime *gtime.Time
 		)
@@ -61,7 +61,7 @@ func MakeChatHandleFunc(hub *SessionHub, authFunc AuthFunc) http.HandlerFunc {
 			}
 			code, resMsg := 0, "认证通过"
 			token, _ := msg.Data.(map[string]any)["token"].(string)
-			sessionId, claims, err = authFunc(token)
+			sessionID, claims, err = authFunc(token)
 			if err != nil {
 				hub.log.Errorf("auth failed:", err)
 				if errors.Is(err, jwt.ErrTokenExpired) {
@@ -75,22 +75,25 @@ func MakeChatHandleFunc(hub *SessionHub, authFunc AuthFunc) http.HandlerFunc {
 				})
 				return
 			}
-
-			if oldClient := hub.sessions[sessionId]; oldClient != nil {
-				oldClient.conn.WriteJSON(ws.SendMessage{
-					Action: enum.ActionTypeSignout,
-					Data:   "已建立新连接，断开通信",
-				})
-			}
-			if err = conn.WriteJSON(ws.SendMessage{Action: enum.ActionTypeAuth}); err != nil {
+		}
+		serverID, ok := hub.IsOnline(context.Background(), sessionID)
+		if serverID == hub.serverID {
+			hub.removeSession(sessionID)
+		} else if ok {
+			if err = hub.SendSignoutNotify(context.Background(), serverID, sessionID); err != nil {
+				hub.log.Errorf("hub.SendSignoutNotify failed, session: [%s:%s], error: %v", serverID, sessionID, err)
+				conn.Close()
 				return
 			}
-			createTime = gtime.Now()
-			hub.log.Infof("[%s:%d] 身份认证已通过", sessionId, createTime.UnixNano())
 		}
+		if err = conn.WriteJSON(ws.SendMessage{Action: enum.ActionTypeAuth}); err != nil {
+			return
+		}
+		createTime = gtime.Now()
+		hub.log.Infof("[%s:%d] 身份认证已通过", sessionID, createTime.UnixNano())
 
 		session := &userSession{
-			id:         sessionId,
+			id:         sessionID,
 			hub:        hub,
 			conn:       conn,
 			sendChan:   make(chan *ws.MessageWrapper, 256),

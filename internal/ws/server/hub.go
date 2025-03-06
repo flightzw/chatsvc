@@ -3,7 +3,10 @@ package server
 import (
 	"context"
 	"strconv"
+	"time"
 
+	"github.com/flightzw/chatsvc/internal/enum"
+	"github.com/flightzw/chatsvc/internal/ws"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/redis/go-redis/v9"
 )
@@ -29,6 +32,8 @@ func InitSessionHub(logger log.Logger, redisClient *redis.Client) (*SessionHub, 
 	}
 	// 监听本地消息推送队列，转发数据
 	go hub.Run()
+	// 监听强制登出信号队列，移除连接
+	go listenForceSignoutQueue(hub, 100*time.Millisecond)
 	return hub, nil
 }
 
@@ -68,21 +73,15 @@ func (h *SessionHub) Run() {
 	}
 }
 
-// 核心
-// 消息推送、消息接收模块
-// 消息处理函数
-/*
-type Sender interface {
-	// inner queue, send message to queue
-	func(ctx context.Context, data *sendInfo) error
+func (hub *SessionHub) removeSession(sessionID string) {
+	session := hub.sessions[sessionID]
+	if session == nil {
+		return
+	}
+	err := session.conn.WriteJSON(ws.SendMessage{
+		Action: enum.ActionTypeSignout,
+		Data:   "已在其他地方登录，将强制退出",
+	})
+	hub.log.Infof("已通知用户断开连接 [%s:%s:%d], res: %v", hub.serverID, sessionID, session.createTime.UnixNano(), err)
+	session.conn.Close()
 }
-
-type Receiver interface {
-	// inner queue, receive message from queue
-	func(ctx context.Context, func()) error
-}
-流程：
-发送消息到队列 Sender, Receiver
-监听队列状态，接收消息并分发到 client 局部队列 func(clientMap [string]*client)
-client 监听局部队列转发消息到客户端
-*/

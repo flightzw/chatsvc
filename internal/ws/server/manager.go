@@ -13,51 +13,27 @@ import (
 )
 
 type MessageManager struct {
-	serverId    string
+	serverID    string
 	log         *log.Helper
 	redisClient *redis.Client
 	broadcast   chan *ws.MessageWrapper
 }
 
 func NewMessageManager(logger log.Logger, redisClient *redis.Client) (*MessageManager, error) {
-	helper := log.NewHelper(log.With(logger, "module", "chatsvc/ws/server"))
-	serverId, err := redisClient.Incr(context.Background(), ws.RedisKeyServerIdCount).Result()
+	serverID, err := redisClient.Incr(context.Background(), ws.RedisKeyServerIdCount).Result()
 	if err != nil {
 		return nil, errors.Wrap(err, "redisClient.Incr")
 	}
-	broadcast := make(chan *ws.MessageWrapper, 512)
-	// 定期从消息推送队列拉取数据
-	go func() {
-		helper.Info("[message-manager] start listen message send queue.")
-		queueKey := fmt.Sprintf(ws.RedisKeyMessageQueue, serverId)
-		ctx := context.Background()
-		ticker := time.NewTicker(100 * time.Millisecond)
-		defer ticker.Stop()
-
-		for {
-			<-ticker.C
-			results, err := redisClient.LPopCount(ctx, queueKey, 100).Result()
-			if err != nil && err != redis.Nil {
-				helper.Error("redisClient.LPopCount:", err)
-				return
-			}
-
-			for _, result := range results {
-				data := &ws.MessageWrapper{}
-				if err = json.Unmarshal([]byte(result), data); err != nil {
-					helper.Error("json.Unmarshal:", err)
-				}
-				broadcast <- data
-			}
-		}
-	}()
-
-	return &MessageManager{
-		log:         helper,
-		serverId:    fmt.Sprint(serverId),
+	manager := &MessageManager{
+		log:         log.NewHelper(log.With(logger, "module", "chatsvc/ws/server")),
+		serverID:    fmt.Sprint(serverID),
 		redisClient: redisClient,
-		broadcast:   broadcast,
-	}, nil
+		broadcast:   make(chan *ws.MessageWrapper, 512),
+	}
+	// 定期从消息推送队列拉取数据
+	go listenMessagePushQueue(manager, 100*time.Millisecond)
+
+	return manager, nil
 }
 
 func (m *MessageManager) GetMessageSendChan(ctx context.Context) <-chan *ws.MessageWrapper {
@@ -76,22 +52,22 @@ func (m *MessageManager) SendMessage(ctx context.Context, data *ws.MessageWrappe
 
 	serverRecvMap := map[string][]int32{}
 	for idx, recvId := range data.RecvIds {
-		serverId, ok := serverIds[idx].(string)
+		serverID, ok := serverIds[idx].(string)
 		if !ok {
 			m.log.Infof("user: %d not online, skip send step.", recvId)
 			continue
 		}
-		serverRecvMap[serverId] = append(serverRecvMap[serverId], recvId)
+		serverRecvMap[serverID] = append(serverRecvMap[serverID], recvId)
 	}
 
-	for serverId, recvIds := range serverRecvMap {
+	for serverID, recvIds := range serverRecvMap {
 		msg := &ws.MessageWrapper{
 			RecvIds:      recvIds,
 			Data:         data.Data,
 			NotifyResult: data.NotifyResult,
 		}
 		msgBytes, _ := json.Marshal(msg)
-		err = m.redisClient.RPush(ctx, fmt.Sprintf(ws.RedisKeyMessageQueue, serverId), string(msgBytes)).Err()
+		err = m.redisClient.RPush(ctx, fmt.Sprintf(ws.RedisKeyMessageQueue, serverID), string(msgBytes)).Err()
 		if err != nil {
 			return errors.Wrap(err, "redisClient.RPush")
 		}
@@ -104,16 +80,29 @@ func (m *MessageManager) SendResultNotify(ctx context.Context, success bool, dat
 		Success: success,
 		Data:    data,
 	})
-	fmt.Println("[manager] send-result-notify:", string(resultBytes))
 	if err := m.redisClient.RPush(ctx, ws.RedisKeyResultNotifyQueue, string(resultBytes)).Err(); err != nil {
 		return errors.Wrap(err, "redisClient.RPush")
 	}
 	return nil
 }
 
+func (m *MessageManager) SendSignoutNotify(ctx context.Context, serverID, sessionID string) error {
+	if err := m.redisClient.RPush(ctx, fmt.Sprintf(ws.RedisKeyForceSignoutQueue, serverID), sessionID).Err(); err != nil {
+		return errors.Wrap(err, "redisClient.RPush")
+	}
+	return nil
+}
+
+func (c *MessageManager) IsOnline(ctx context.Context, sessionID string) (serverID string, ok bool) {
+	serverID, err := c.redisClient.Get(ctx, fmt.Sprintf(ws.RedisKeyUserServer, sessionID)).Result()
+	if err != nil {
+		log.Error("redisClient.Get", err)
+	}
+	return serverID, err == nil
+}
 func (m *MessageManager) onSessionRegister(sessionId string) error {
 	return m.redisClient.Set(context.Background(),
-		fmt.Sprintf(ws.RedisKeyUserServer, sessionId), m.serverId, 3*time.Minute).Err()
+		fmt.Sprintf(ws.RedisKeyUserServer, sessionId), m.serverID, 3*time.Minute).Err()
 }
 
 func (m *MessageManager) onSessionHeartbeat(sessionId string, count int) error {
