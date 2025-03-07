@@ -14,6 +14,9 @@ server:
       prifile: 'configs/rsa/refresh_private_key.pem'
       pubfile: 'configs/rsa/refresh_public_key.pem'
       expire_in: 86400
+  limit:
+    daily_max_new_user_num: 100
+    daily_max_new_msg_num: 5000
 data:
   env: dev
   database:

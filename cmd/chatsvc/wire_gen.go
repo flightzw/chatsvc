@@ -32,7 +32,7 @@ func wireApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*
 		return nil, nil, err
 	}
 	db := data.NewDB(confData, logger)
-	dataData, cleanup, err := data.NewData(confData, db, logger)
+	dataData, cleanup, err := data.NewData(confData, db, redisClient, logger)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -45,7 +45,7 @@ func wireApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*
 	userService := service.NewUserService(userUsecase)
 	loginService := service.NewLoginService(userUsecase)
 	privateMessageRepo := data.NewPrivateMessageRepo(dataData, logger)
-	privateMessageUsecase := biz.NewPrivateMessageUsecase(privateMessageRepo, friendRepo, userRepo, logger, chatClient)
+	privateMessageUsecase := biz.NewPrivateMessageUsecase(privateMessageRepo, friendRepo, userRepo, confServer, logger, chatClient)
 	privateMessageService := service.NewPrivateMessageService(privateMessageUsecase)
 	httpServer := server2.NewHTTPServer(confServer, logger, sessionHub, friendService, userService, loginService, privateMessageService)
 	app := newApp(logger, httpServer)

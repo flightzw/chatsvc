@@ -11,6 +11,7 @@ import (
 
 	"github.com/flightzw/chatsvc/api/chatsvc/errno"
 	"github.com/flightzw/chatsvc/internal/biz/query"
+	"github.com/flightzw/chatsvc/internal/conf"
 	"github.com/flightzw/chatsvc/internal/entity"
 	"github.com/flightzw/chatsvc/internal/enum"
 	"github.com/flightzw/chatsvc/internal/utils/jwt"
@@ -42,6 +43,8 @@ type PrivateMessageRepo interface {
 	ListPrivateMessage(ctx context.Context, queryFunc query.QueryFunc, page, pageSize int) ([]*PrivateMessage, int64, error)
 	UpdatePrivateMessageStatus(ctx context.Context, id int32, prev, curr enum.MessageStatus) error
 	ReadedPrivateMessage(ctx context.Context, userID, friendID int32) error
+
+	CountTodayNewMessageNum(ctx context.Context) (count int, err error)
 }
 
 type PrivateMessageUsecase struct {
@@ -50,10 +53,11 @@ type PrivateMessageUsecase struct {
 	userRepo   UserRepo
 
 	log        *log.Helper
+	conf       *conf.Server
 	chatClient *client.ChatClient
 }
 
-func NewPrivateMessageUsecase(repo PrivateMessageRepo, friendRepo FriendRepo, userRepo UserRepo,
+func NewPrivateMessageUsecase(repo PrivateMessageRepo, friendRepo FriendRepo, userRepo UserRepo, conf *conf.Server,
 	logger log.Logger, chatClient *client.ChatClient) *PrivateMessageUsecase {
 	return &PrivateMessageUsecase{
 		repo:       repo,
@@ -65,10 +69,19 @@ func NewPrivateMessageUsecase(repo PrivateMessageRepo, friendRepo FriendRepo, us
 }
 
 func (uc *PrivateMessageUsecase) SendPrivateMessage(ctx context.Context, message *PrivateMessage) (data *vo.PrivateMessageVO, err error) {
+	count, err := uc.repo.CountTodayNewMessageNum(ctx)
+	if err != nil {
+		return nil, errno.ErrorSystemInternalFailure("此功能暂不可用").WithCause(err)
+	}
+	if count >= int(uc.conf.Limit.DailyMaxNewMsgNum) {
+		return nil, errno.ErrorDeniedAccess("今日消息发送数已达上限")
+	}
+
 	message.SendID, _ = jwt.GetUserInfo(ctx)
 	if _, err := uc.friendRepo.GetFriendByFriendID(ctx, message.SendID, message.RecvID); err != nil {
 		return nil, errno.ErrorParamInvalid("您不是对方好友，无法发送消息").WithCause(err)
 	}
+
 	message.CreatedAt = gtime.Now()
 	id, err := uc.repo.CreatePrivateMessage(ctx, message)
 	if err != nil {

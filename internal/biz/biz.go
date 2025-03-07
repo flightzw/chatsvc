@@ -12,6 +12,7 @@ import (
 var ProviderSet = wire.NewSet(NewUserUsecase, NewFriendUsecase, NewPrivateMessageUsecase,
 	client.InitChatClient)
 
+// 事务
 type TransactionInterface interface {
 	Transaction(ctx context.Context, execute func(ctx context.Context) error) error // 启用事务
 }

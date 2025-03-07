@@ -96,7 +96,7 @@ func (m *MessageManager) SendSignoutNotify(ctx context.Context, serverID, sessio
 func (c *MessageManager) IsOnline(ctx context.Context, sessionID string) (serverID string, ok bool) {
 	serverID, err := c.redisClient.Get(ctx, fmt.Sprintf(ws.RedisKeyUserServer, sessionID)).Result()
 	if err != nil {
-		log.Error("redisClient.Get", err)
+		log.Error("redisClient.Get:", err)
 	}
 	return serverID, err == nil
 }

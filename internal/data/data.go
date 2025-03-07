@@ -21,8 +21,9 @@ type queryKey struct{}
 // Data .
 type Data struct {
 	// TODO wrapped database client
-	db    *gorm.DB
-	query *query.Query
+	db          *gorm.DB
+	redisClient *redis.Client
+	query       *query.Query
 }
 
 func NewDB(conf *conf.Data, logger log.Logger) *gorm.DB {
@@ -47,13 +48,14 @@ func NewRedisClient(conf *conf.Data) *redis.Client {
 }
 
 // NewData .
-func NewData(c *conf.Data, db *gorm.DB, logger log.Logger) (*Data, func(), error) {
+func NewData(c *conf.Data, db *gorm.DB, redisClient *redis.Client, logger log.Logger) (*Data, func(), error) {
 	cleanup := func() {
 		log.NewHelper(logger).Info("closing the data resources")
 	}
 	return &Data{
-		db:    db,
-		query: query.Use(db),
+		db:          db,
+		query:       query.Use(db),
+		redisClient: redisClient,
 	}, cleanup, nil
 }
 

@@ -48,6 +48,8 @@ type UserRepo interface {
 	GetUserByUsername(ctx context.Context, username string) (data *User, err error)
 	ListUser(ctx context.Context, queryFunc query.QueryFunc, page, pageSize int) (data []*User, total int64, err error)
 	UpdateUser(ctx context.Context, id int32, data entity.AnyMap) (err error)
+
+	CountTodayCreateUserNum(ctx context.Context) (count int, err error)
 }
 
 // UserUsecase is a User usecase.
@@ -89,16 +91,27 @@ func NewUserUsecase(repo UserRepo, friendRepo FriendRepo, conf *conf.Server, cha
 }
 
 func (uc *UserUsecase) Register(ctx context.Context, user *User) error {
+	count, err := uc.repo.CountTodayCreateUserNum(ctx)
+	if err != nil {
+		return errno.ErrorSystemInternalFailure("此功能暂不可用").WithCause(err)
+	}
+	if count >= int(uc.conf.Limit.DailyMaxNewUserNum) {
+		return errno.ErrorDeniedAccess("今日用户注册数已达上限")
+	}
+
 	if data, _ := uc.repo.GetUserByUsername(ctx, user.Username); data != nil {
 		return errno.ErrorUserUnameBeUsed("用户名已被使用")
 	}
 
 	user.Password = generatePasswordStr(user.Password)
 	user.Status = enum.AccountStatusNormal
-	if _, err := uc.repo.CreateUser(ctx, user); err != nil {
-		return errno.ErrorUserRegisterFailed("用户注册时出错").WithCause(err)
-	}
-	return nil
+
+	return uc.repo.Transaction(ctx, func(ctx context.Context) error {
+		if _, err := uc.repo.CreateUser(ctx, user); err != nil {
+			return errno.ErrorUserRegisterFailed("用户注册时出错").WithCause(err)
+		}
+		return nil
+	})
 }
 
 func (uc *UserUsecase) Login(ctx context.Context, user *User, rememberMe bool) (*vo.LoginVO, error) {

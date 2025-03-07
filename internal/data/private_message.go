@@ -3,6 +3,8 @@ package data
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/flightzw/chatsvc/internal/biz"
 	"github.com/flightzw/chatsvc/internal/biz/query"
@@ -11,6 +13,7 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/pkg/errors"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gen"
 )
 
@@ -36,8 +39,14 @@ func (repo *privateMessageRepo) CreatePrivateMessage(ctx context.Context, messag
 	if err = messageDo.Create(data); err != nil {
 		return 0, errors.Wrap(err, "messageDo.Create")
 	}
+	// 今日新增消息数 + 1
+	key := fmt.Sprintf(cacheKeyTodayNewMessageCount, time.Now().Format("20060102"))
+	if err = incrEX.Run(ctx, repo.redisClient, []string{key}, 84600).Err(); err != nil {
+		return 0, errors.Wrap(err, "incrEX.Run")
+	}
 	return data.ID, nil
 }
+
 func (repo *privateMessageRepo) GetPrivateMessage(ctx context.Context, id int32) (data *biz.PrivateMessage, err error) {
 	msg := repo.UseQuery(ctx).PrivateMessage
 	messageDo := msg.WithContext(ctx)
@@ -89,4 +98,13 @@ func (repo *privateMessageRepo) ReadedPrivateMessage(ctx context.Context, userID
 		return errors.Wrap(err, "messageDo.Update")
 	}
 	return nil
+}
+
+func (repo *privateMessageRepo) CountTodayNewMessageNum(ctx context.Context) (count int, err error) {
+	result, err := repo.redisClient.Get(ctx, fmt.Sprintf(cacheKeyTodayNewMessageCount, time.Now().Format("20060102"))).Result()
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return 0, errors.Wrap(err, "redisClient.Get")
+	}
+	count, _ = strconv.Atoi(result)
+	return count, nil
 }

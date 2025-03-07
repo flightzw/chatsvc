@@ -16,7 +16,7 @@ type SessionHub struct {
 
 	sessions   map[string]*userSession // 本地会话 map
 	register   chan *userSession       // 注册 chan
-	unregister chan string             // 注销 chan
+	unregister chan *userSession       // 注销 chan
 }
 
 func InitSessionHub(logger log.Logger, redisClient *redis.Client) (*SessionHub, error) {
@@ -28,7 +28,7 @@ func InitSessionHub(logger log.Logger, redisClient *redis.Client) (*SessionHub, 
 		MessageManager: manager,
 		sessions:       make(map[string]*userSession),
 		register:       make(chan *userSession),
-		unregister:     make(chan string),
+		unregister:     make(chan *userSession),
 	}
 	// 监听本地消息推送队列，转发数据
 	go hub.Run()
@@ -44,28 +44,27 @@ func (h *SessionHub) Run() {
 		select {
 		case session := <-h.register:
 			h.sessions[session.id] = session
-			if err := h.onSessionRegister(session.id); err != nil {
-				h.log.Error("manager.onSessionRegister:", err)
-			}
-		case sessionId := <-h.unregister:
-			session, ok := h.sessions[sessionId]
-			if !ok {
+			err := h.onSessionRegister(session.id)
+			h.log.Infof("[session-hub] session [%s:%s:%d] register finished, error: %v", h.serverID, session.id, session.createTime.UnixNano(), err)
+		case session := <-h.unregister:
+			storeSession, ok := h.sessions[session.id]
+			if !ok || storeSession != session {
+				h.log.Infof("[session-hub] session [%s:%s:%d] has been unregister, continue", h.serverID, session.id, session.createTime.UnixNano())
 				break
 			}
-			delete(h.sessions, sessionId)
+			delete(h.sessions, session.id)
 			close(session.sendChan)
-			if err := h.onSessionLogout(sessionId); err != nil {
-				h.log.Error("manager.onSessionLogout:", err)
-			}
+			err := h.onSessionLogout(session.id)
+			h.log.Infof("[session-hub] session [%s:%s:%d] unregister finished, error: %v", h.serverID, session.id, session.createTime.UnixNano(), err)
 		case wrapper := <-broadcast:
 			for _, recvId := range wrapper.RecvIds {
-				sessionId := strconv.Itoa(int(recvId))
-				if session, ok := h.sessions[sessionId]; ok {
+				sessionID := strconv.Itoa(int(recvId))
+				if session, ok := h.sessions[sessionID]; ok {
 					select {
 					case session.sendChan <- wrapper:
 					default:
 						close(session.sendChan)
-						delete(h.sessions, sessionId)
+						delete(h.sessions, sessionID)
 					}
 				}
 			}
@@ -82,6 +81,5 @@ func (hub *SessionHub) removeSession(sessionID string) {
 		Action: enum.ActionTypeSignout,
 		Data:   "已在其他地方登录，将强制退出",
 	})
-	hub.log.Infof("已通知用户断开连接 [%s:%s:%d], res: %v", hub.serverID, sessionID, session.createTime.UnixNano(), err)
-	session.conn.Close()
+	hub.log.Infof("session [%s:%s:%d] signout message send finished, error: %v", hub.serverID, sessionID, session.createTime.UnixNano(), err)
 }

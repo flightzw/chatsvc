@@ -39,12 +39,12 @@ type userSession struct {
 // 接收并转发来自客户端的消息
 func (c *userSession) sendMessage(ctx context.Context) {
 	defer func() {
-		c.hub.unregister <- c.id
+		c.hub.unregister <- c
 		c.conn.Close()
 	}()
 
 	count := 0
-	connID := fmt.Sprintf("%s:%d", c.id, c.createTime.UnixNano())
+	connID := fmt.Sprintf("%s:%s:%d", c.hub.serverID, c.id, c.createTime.UnixNano())
 
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -52,7 +52,7 @@ func (c *userSession) sendMessage(ctx context.Context) {
 		count++
 		c.conn.SetReadDeadline(time.Now().Add(pongWait))
 		if err := c.hub.onSessionHeartbeat(c.id, count); err != nil {
-			c.hub.log.Errorf("[%s] manager.onSessionHeartbeat: %v", connID, err)
+			c.hub.log.Errorf("session [%s] heartbeat callback failed, error: %v", connID, err)
 		}
 		return nil
 	})
@@ -61,11 +61,7 @@ func (c *userSession) sendMessage(ctx context.Context) {
 		wrapper := &ws.MessageWrapper{}
 		err := c.conn.ReadJSON(wrapper)
 		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				c.hub.log.Errorf("[%s] CloseError: %v", connID, err)
-			} else {
-				c.hub.log.Infof("[%s] 用户 %s 已断开连接: %v", connID, c.id, err)
-			}
+			c.hub.log.Errorf("session [%s] read message failed, error: %v", connID, err)
 			break
 		}
 		if err = c.hub.SendMessage(ctx, wrapper); err != nil {
@@ -76,7 +72,7 @@ func (c *userSession) sendMessage(ctx context.Context) {
 
 // 将消息推送到客户端
 func (c *userSession) recvMessage(ctx context.Context) {
-	connID := fmt.Sprintf("%s:%d", c.id, c.createTime.UnixNano())
+	connID := fmt.Sprintf("%s:%s:%d", c.hub.serverID, c.id, c.createTime.UnixNano())
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
@@ -104,9 +100,8 @@ func (c *userSession) recvMessage(ctx context.Context) {
 
 				err := c.conn.WriteJSON(wrapper.Data)
 				if wrapper.NotifyResult {
-					resErr := c.hub.SendResultNotify(ctx, err == nil, wrapper.Data)
-					if resErr != nil {
-						c.hub.log.Errorf("[%s] SendResultNotify failed: %v", connID, err)
+					if resErr := c.hub.SendResultNotify(ctx, err == nil, wrapper.Data); resErr != nil {
+						c.hub.log.Errorf("session [%s] send result notify failed, error: %v", connID, err)
 					}
 				}
 				if se := errors.FromError(err); se != nil {

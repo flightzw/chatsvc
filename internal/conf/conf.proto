@@ -30,9 +30,14 @@ message Server {
     Token access_token  = 1;
     Token refresh_token = 2;
   }
-  HTTP http = 1;
-  GRPC grpc = 2;
-  JWT  jwt  = 3;
+  message Limit {
+    int32 daily_max_new_user_num = 1;
+    int32 daily_max_new_msg_num  = 2;
+  }
+  HTTP  http  = 1;
+  GRPC  grpc  = 2;
+  JWT   jwt   = 3;
+  Limit limit = 4;
 }
 
 message Data {
@@ -45,7 +50,8 @@ message Data {
     string password = 2;
     int32  db       = 3;
   }
-  Database database = 1;
-  Redis    redis    = 2;
-  string   env      = 10;
+
+  string   env      = 1;
+  Database database = 2;
+  Redis    redis    = 3;
 }

@@ -47,6 +47,30 @@ func ErrorVoConvertFailed(format string, args ...interface{}) *errors.Error {
 	return errors.New(500, ErrorReason_VO_CONVERT_FAILED.String(), fmt.Sprintf(format, args...))
 }
 
+func IsSystemInternalFailure(err error) bool {
+	if err == nil {
+		return false
+	}
+	e := errors.FromError(err)
+	return e.Reason == ErrorReason_SYSTEM_INTERNAL_FAILURE.String() && e.Code == 500
+}
+
+func ErrorSystemInternalFailure(format string, args ...interface{}) *errors.Error {
+	return errors.New(500, ErrorReason_SYSTEM_INTERNAL_FAILURE.String(), fmt.Sprintf(format, args...))
+}
+
+func IsDeniedAccess(err error) bool {
+	if err == nil {
+		return false
+	}
+	e := errors.FromError(err)
+	return e.Reason == ErrorReason_DENIED_ACCESS.String() && e.Code == 400
+}
+
+func ErrorDeniedAccess(format string, args ...interface{}) *errors.Error {
+	return errors.New(400, ErrorReason_DENIED_ACCESS.String(), fmt.Sprintf(format, args...))
+}
+
 // data action common errors
 func IsDataSaveFailed(err error) bool {
 	if err == nil {

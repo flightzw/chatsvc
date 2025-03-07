@@ -78,10 +78,12 @@ func MakeChatHandleFunc(hub *SessionHub, authFunc AuthFunc) http.HandlerFunc {
 		}
 		serverID, ok := hub.IsOnline(context.Background(), sessionID)
 		if serverID == hub.serverID {
+			// 存在本地会话，直接注销
 			hub.removeSession(sessionID)
 		} else if ok {
+			// 存在远程会话，发送通知
 			if err = hub.SendSignoutNotify(context.Background(), serverID, sessionID); err != nil {
-				hub.log.Errorf("hub.SendSignoutNotify failed, session: [%s:%s], error: %v", serverID, sessionID, err)
+				hub.log.Errorf("session: [%s:%s] send signout notify failed, error: %v", serverID, sessionID, err)
 				conn.Close()
 				return
 			}
@@ -90,7 +92,7 @@ func MakeChatHandleFunc(hub *SessionHub, authFunc AuthFunc) http.HandlerFunc {
 			return
 		}
 		createTime = gtime.Now()
-		hub.log.Infof("[%s:%d] 身份认证已通过", sessionID, createTime.UnixNano())
+		hub.log.Infof("session [%s:%s:%d] auth passed.", hub.serverID, sessionID, createTime.UnixNano())
 
 		session := &userSession{
 			id:         sessionID,
