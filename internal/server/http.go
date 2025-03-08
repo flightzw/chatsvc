@@ -92,15 +92,3 @@ func makeChatAuthFunc(signMethod jwtv5.SigningMethod, keyFunc jwtv5.Keyfunc) ser
 		return claimsImpl.ID, claimsImpl, nil
 	}
 }
-
-func serveHome(w http.ResponseWriter, r *nethttp.Request) {
-	if r.URL.Path != "/" {
-		nethttp.Error(w, "Not found", nethttp.StatusNotFound)
-		return
-	}
-	if r.Method != nethttp.MethodGet {
-		nethttp.Error(w, "Method not allowed", nethttp.StatusMethodNotAllowed)
-		return
-	}
-	nethttp.ServeFile(w, r, "./web/chat-client/home.html")
-}

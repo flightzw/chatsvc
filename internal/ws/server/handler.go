@@ -59,20 +59,20 @@ func MakeChatHandleFunc(hub *SessionHub, authFunc AuthFunc) http.HandlerFunc {
 				conn.Close()
 				return
 			}
-			code, resMsg := 0, "认证通过"
 			token, _ := msg.Data.(map[string]any)["token"].(string)
 			sessionID, claims, err = authFunc(token)
 			if err != nil {
-				hub.log.Errorf("auth failed:", err)
+				code, resMsg := 0, ""
 				if errors.Is(err, jwt.ErrTokenExpired) {
 					code, resMsg = 401, "token 已过期"
 				} else {
 					code, resMsg = 400, "token 无效"
 				}
-				conn.WriteJSON(ws.SendMessage{
+				err1 := conn.WriteJSON(ws.SendMessage{
 					Action: enum.ActionTypeAuth,
 					Data:   entity.AnyMap{"code": code, "message": resMsg},
 				})
+				hub.log.Errorf("auth failed: %v, resp error: %v", err, err1)
 				return
 			}
 		}

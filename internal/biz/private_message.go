@@ -92,7 +92,7 @@ func (uc *PrivateMessageUsecase) SendPrivateMessage(ctx context.Context, message
 	result.ID = id
 
 	// 发送给好友
-	if err = uc.sendPrivateMessage(ctx, message.RecvID, result); err != nil {
+	if err = uc.sendPrivateMessage(ctx, message.RecvID, result, true); err != nil {
 		return nil, errno.ErrorMessageSendFailed("发送消息时出错").WithCause(err)
 	}
 	// 响应结果
@@ -148,9 +148,9 @@ func (uc *PrivateMessageUsecase) RecallPrivateMessage(ctx context.Context, id in
 	result := newPrivateMessageVO(message)
 	result.Status = enum.MessageStatusRecall
 	result.Content = "你撤回了一条消息"
-	uc.sendPrivateMessage(ctx, message.SendID, result)
+	uc.sendPrivateMessage(ctx, message.SendID, result, false)
 	result.Content = "对方撤回了一条消息"
-	uc.sendPrivateMessage(ctx, message.RecvID, result)
+	uc.sendPrivateMessage(ctx, message.RecvID, result, false)
 	return
 }
 
@@ -186,7 +186,7 @@ func (uc *PrivateMessageUsecase) PullOfflinePrivateMessage(ctx context.Context, 
 		return errno.ErrorDataQueryFailed("拉取离线消息时出错").WithCause(err)
 	}
 	for _, msg := range data {
-		uc.sendPrivateMessage(ctx, userID, newPrivateMessageVO(msg))
+		uc.sendPrivateMessage(ctx, userID, newPrivateMessageVO(msg), msg.Status == enum.MessageStatusUnsend)
 	}
 	uc.chatClient.SendMessage(ctx, &ws.MessageWrapper{
 		RecvIds: []int32{userID},
@@ -255,14 +255,14 @@ func (uc *PrivateMessageUsecase) ListPrivateMessage(ctx context.Context, params 
 	return data, total, nil
 }
 
-func (uc *PrivateMessageUsecase) sendPrivateMessage(ctx context.Context, recvId int32, data *vo.PrivateMessageVO) error {
+func (uc *PrivateMessageUsecase) sendPrivateMessage(ctx context.Context, recvId int32, data *vo.PrivateMessageVO, useNotify bool) error {
 	return uc.chatClient.SendMessage(ctx, &ws.MessageWrapper{
 		RecvIds: []int32{recvId},
 		Data: &ws.SendMessage{
 			Action: enum.ActionTypePrivateMessage,
 			Data:   data,
 		},
-		NotifyResult: true,
+		NotifyResult: useNotify,
 	})
 }
 

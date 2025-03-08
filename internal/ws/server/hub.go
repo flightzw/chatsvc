@@ -81,5 +81,6 @@ func (hub *SessionHub) removeSession(sessionID string) {
 		Action: enum.ActionTypeSignout,
 		Data:   "已在其他地方登录，将强制退出",
 	})
+	session.conn.Close()
 	hub.log.Infof("session [%s:%s:%d] signout message send finished, error: %v", hub.serverID, sessionID, session.createTime.UnixNano(), err)
 }
