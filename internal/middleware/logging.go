@@ -14,25 +14,24 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-func Server(logger log.Logger) middleware.Middleware {
+type logInfoKey struct{}
+
+func Logger(logger log.Logger) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
-		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
+		return func(ctx context.Context, req any) (reply any, err error) {
 			var (
-				code      int32
+				startTime = time.Now()
+				code      = int32(status.FromGRPCCode(codes.OK))
+				infoMap   = map[string]any{}
 				reason    string
 				kind      string
 				operation string
 			)
-
-			// default code
-			code = int32(status.FromGRPCCode(codes.OK))
-
-			startTime := time.Now()
 			if info, ok := transport.FromServerContext(ctx); ok {
 				kind = info.Kind().String()
 				operation = info.Operation()
 			}
-			reply, err = handler(ctx, req)
+			reply, err = handler(context.WithValue(ctx, logInfoKey{}, infoMap), req)
 			if se := errors.FromError(err); se != nil {
 				code = se.Code
 				reason = se.Reason
@@ -42,6 +41,7 @@ func Server(logger log.Logger) middleware.Middleware {
 				"kind", "server",
 				"component", kind,
 				"operation", operation,
+				"uid", infoMap["uid"],
 				"args", extractArgs(req),
 				"code", code,
 				"reason", reason,
@@ -53,7 +53,7 @@ func Server(logger log.Logger) middleware.Middleware {
 	}
 }
 
-func extractArgs(req interface{}) string {
+func extractArgs(req any) string {
 	args, _ := json.Marshal(req)
 	return string(args)
 }

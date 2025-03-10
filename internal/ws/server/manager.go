@@ -96,23 +96,39 @@ func (m *MessageManager) SendSignoutNotify(ctx context.Context, serverID, sessio
 func (c *MessageManager) IsOnline(ctx context.Context, sessionID string) (serverID string, ok bool) {
 	serverID, err := c.redisClient.Get(ctx, fmt.Sprintf(ws.RedisKeyUserServer, sessionID)).Result()
 	if err != nil {
-		log.Error("redisClient.Get:", err)
+		log.Errorf("session [%s] online check error: %v", sessionID, err)
 	}
 	return serverID, err == nil
 }
-func (m *MessageManager) onSessionRegister(sessionId string) error {
+
+func (m *MessageManager) onSessionRegister(sessionID string) error {
 	return m.redisClient.Set(context.Background(),
-		fmt.Sprintf(ws.RedisKeyUserServer, sessionId), m.serverID, 3*time.Minute).Err()
+		fmt.Sprintf(ws.RedisKeyUserServer, sessionID), m.serverID, 3*time.Minute).Err()
 }
 
-func (m *MessageManager) onSessionHeartbeat(sessionId string, count int) error {
+func (m *MessageManager) onSessionHeartbeat(sessionID string, count int) error {
 	if count%15 == 0 {
 		return m.redisClient.Expire(context.Background(),
-			fmt.Sprintf(ws.RedisKeyUserServer, sessionId), 3*time.Minute).Err()
+			fmt.Sprintf(ws.RedisKeyUserServer, sessionID), 3*time.Minute).Err()
 	}
 	return nil
 }
 
-func (m *MessageManager) onSessionLogout(sessionId string) error {
-	return m.redisClient.Del(context.Background(), fmt.Sprintf(ws.RedisKeyUserServer, sessionId)).Err()
+func (m *MessageManager) onSessionLogout(sessionID string) error {
+	key := fmt.Sprintf(ws.RedisKeyUserServer, sessionID)
+	res, err := delByValue.Run(context.Background(), m.redisClient,
+		[]string{key}, m.serverID).Result()
+	if res.(int64) == 0 && err == nil {
+		return errors.Errorf("not found session cache: %s => %s", key, m.serverID)
+	}
+	return err
 }
+
+// 比较 keyval 并删除
+var delByValue = redis.NewScript(`
+if redis.call('GET', KEYS[1]) == ARGV[1] then
+    return redis.call('DEL', KEYS[1])
+else
+	return 0
+end
+`)

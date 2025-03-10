@@ -10,7 +10,7 @@ import (
 
 // ProviderSet is biz providers.
 var ProviderSet = wire.NewSet(NewUserUsecase, NewFriendUsecase, NewPrivateMessageUsecase,
-	client.InitChatClient)
+	client.InitChatClient, InitSensitiveWordFiliter)
 
 // 事务
 type TransactionInterface interface {

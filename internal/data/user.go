@@ -16,6 +16,7 @@ import (
 	"github.com/flightzw/chatsvc/internal/biz/query"
 	"github.com/flightzw/chatsvc/internal/data/model"
 	"github.com/flightzw/chatsvc/internal/entity"
+	"github.com/flightzw/chatsvc/internal/utils/cache"
 )
 
 type userRepo struct {
@@ -42,9 +43,9 @@ func (repo *userRepo) CreateUser(ctx context.Context, user *biz.User) (id int32,
 		return 0, errors.Wrap(err, "userDo.Create")
 	}
 	// 今日新增用户数 + 1
-	key := fmt.Sprintf(cacheKeyTodayNewUserCount, time.Now().Format("20060102"))
-	if err = incrEX.Run(ctx, repo.redisClient, []string{key}, 84600).Err(); err != nil {
-		return 0, errors.Wrap(err, "incrEX.Run")
+	key := fmt.Sprintf(cache.RedisKeyTodayNewUserCount, time.Now().Format("20060102"))
+	if err = cache.IncrEX.Run(ctx, repo.redisClient, []string{key}, 84600).Err(); err != nil {
+		return 0, errors.Wrap(err, "cache.IncrEX.Run")
 	}
 	return data.ID, nil
 }
@@ -105,12 +106,27 @@ func (repo *userRepo) UpdateUser(ctx context.Context, id int32, data entity.AnyM
 	return nil
 }
 
+func (repo *userRepo) UpdateUserPassword(ctx context.Context, id int32, password string) (err error) {
+	user := repo.UseQuery(ctx).User
+	userDo := user.WithContext(ctx)
+
+	if _, err = userDo.Where(user.ID.Eq(id)).UpdateColumn(user.Password, password); err != nil {
+		return errors.Wrap(err, "userDo.Updates")
+	}
+	err = repo.redisClient.Set(ctx,
+		fmt.Sprintf(cache.RedisKeyUserUpdatePassword, id), time.Now().Unix(), time.Hour).Err()
+	if err != nil {
+		return errors.Wrap(err, "redisClient.Set")
+	}
+	return nil
+}
+
 func (repo *userRepo) DeleteUser(ctx context.Context, id int32) (err error) {
 	panic("not implemented") // TODO: Implement
 }
 
 func (repo *userRepo) CountTodayCreateUserNum(ctx context.Context) (count int, err error) {
-	result, err := repo.redisClient.Get(ctx, fmt.Sprintf(cacheKeyTodayNewUserCount, time.Now().Format("20060102"))).Result()
+	result, err := repo.redisClient.Get(ctx, fmt.Sprintf(cache.RedisKeyTodayNewUserCount, time.Now().Format("20060102"))).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
 		return 0, errors.Wrap(err, "redisClient.Get")
 	}

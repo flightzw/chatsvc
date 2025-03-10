@@ -3,8 +3,3 @@ syntax = "proto3";
 package chatsvc.model;
 
 option go_package = "github.com/flightzw/chatsvc/api/chatsvc/model;model";
-
-enum ChatMsgType {
-  CHAT_MSG_TYPE_PING = 0;  // 心跳
-  CHAT_MSG_TYPE_TEXT = 1;  // 文本
-}

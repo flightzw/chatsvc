@@ -1,8 +1,8 @@
 package entity
 
-type AnyMap map[string]interface{}
+type AnyMap map[string]any
 
-func (m AnyMap) Assert() map[string]interface{} {
+func (m AnyMap) Assert() map[string]any {
 	return m
 }
 

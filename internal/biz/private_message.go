@@ -15,6 +15,7 @@ import (
 	"github.com/flightzw/chatsvc/internal/entity"
 	"github.com/flightzw/chatsvc/internal/enum"
 	"github.com/flightzw/chatsvc/internal/utils/jwt"
+	"github.com/flightzw/chatsvc/internal/utils/stringx"
 	"github.com/flightzw/chatsvc/internal/vo"
 	"github.com/flightzw/chatsvc/internal/ws"
 	"github.com/flightzw/chatsvc/internal/ws/client"
@@ -54,17 +55,20 @@ type PrivateMessageUsecase struct {
 
 	log        *log.Helper
 	conf       *conf.Server
+	filter     *stringx.Filter
 	chatClient *client.ChatClient
 }
 
 func NewPrivateMessageUsecase(repo PrivateMessageRepo, friendRepo FriendRepo, userRepo UserRepo, conf *conf.Server,
-	logger log.Logger, chatClient *client.ChatClient) *PrivateMessageUsecase {
+	logger log.Logger, chatClient *client.ChatClient, filter *stringx.Filter) *PrivateMessageUsecase {
 	return &PrivateMessageUsecase{
 		repo:       repo,
 		friendRepo: friendRepo,
 		userRepo:   userRepo,
 		log:        log.NewHelper(log.With(logger, "module", "chatsvc/biz/PrivateMessageUsecase")),
 		chatClient: chatClient,
+		conf:       conf,
+		filter:     filter,
 	}
 }
 
@@ -81,14 +85,13 @@ func (uc *PrivateMessageUsecase) SendPrivateMessage(ctx context.Context, message
 	if _, err := uc.friendRepo.GetFriendByFriendID(ctx, message.SendID, message.RecvID); err != nil {
 		return nil, errno.ErrorParamInvalid("您不是对方好友，无法发送消息").WithCause(err)
 	}
-
 	message.CreatedAt = gtime.Now()
 	id, err := uc.repo.CreatePrivateMessage(ctx, message)
 	if err != nil {
 		return nil, errno.ErrorDataSaveFailed("暂存消息时出错").WithCause(err)
 	}
 
-	result := newPrivateMessageVO(message)
+	result := newPrivateMessageVO(uc.filter, message)
 	result.ID = id
 
 	// 发送给好友
@@ -145,7 +148,7 @@ func (uc *PrivateMessageUsecase) RecallPrivateMessage(ctx context.Context, id in
 		return errno.ErrorDataUpdateFailed("撤回消息时出错").WithCause(err)
 	}
 
-	result := newPrivateMessageVO(message)
+	result := newPrivateMessageVO(uc.filter, message)
 	result.Status = enum.MessageStatusRecall
 	result.Content = "你撤回了一条消息"
 	uc.sendPrivateMessage(ctx, message.SendID, result, false)
@@ -186,8 +189,9 @@ func (uc *PrivateMessageUsecase) PullOfflinePrivateMessage(ctx context.Context, 
 		return errno.ErrorDataQueryFailed("拉取离线消息时出错").WithCause(err)
 	}
 	for _, msg := range data {
-		uc.sendPrivateMessage(ctx, userID, newPrivateMessageVO(msg), msg.Status == enum.MessageStatusUnsend)
+		uc.sendPrivateMessage(ctx, userID, newPrivateMessageVO(uc.filter, msg), msg.Status == enum.MessageStatusUnsend)
 	}
+	// 通知推送完成
 	uc.chatClient.SendMessage(ctx, &ws.MessageWrapper{
 		RecvIds: []int32{userID},
 		Data:    &ws.SendMessage{Action: enum.ActionTypeOfflinePush, Data: false},
@@ -236,7 +240,7 @@ func (uc *PrivateMessageUsecase) ListPrivateMessage(ctx context.Context, params 
 			cpDo = cpDo.Where(msg.CreatedAt.Gte(gtime.New(params.SendDateGte).Time))
 		}
 		if params.SendDateLte != "" {
-			cpDo = cpDo.Where(msg.CreatedAt.Lte(gtime.New(params.SendDateLte).Time))
+			cpDo = cpDo.Where(msg.CreatedAt.Lte(gtime.New(params.SendDateLte).Add(86399 * time.Second).Time))
 		}
 		return cpDo.Where(msg.Status.Neq(int32(enum.MessageStatusRecall))).
 			Where(do.Where(do.Where(msg.SendID.Eq(userID), msg.RecvID.Eq(params.FriendID))).
@@ -250,7 +254,7 @@ func (uc *PrivateMessageUsecase) ListPrivateMessage(ctx context.Context, params 
 	}
 	data = make([]*vo.PrivateMessageVO, 0, len(msgs))
 	for _, msg := range msgs {
-		data = append(data, newPrivateMessageVO(msg))
+		data = append(data, newPrivateMessageVO(uc.filter, msg))
 	}
 	return data, total, nil
 }
@@ -266,12 +270,12 @@ func (uc *PrivateMessageUsecase) sendPrivateMessage(ctx context.Context, recvId 
 	})
 }
 
-func newPrivateMessageVO(data *PrivateMessage) *vo.PrivateMessageVO {
+func newPrivateMessageVO(filter *stringx.Filter, data *PrivateMessage) *vo.PrivateMessageVO {
 	return &vo.PrivateMessageVO{
 		ID:        data.ID,
 		SendID:    data.SendID,
 		RecvID:    data.RecvID,
-		Content:   data.Content,
+		Content:   filter.Replace(data.Content, '*'),
 		Type:      data.Type,
 		Status:    data.Status,
 		CreatedAt: data.CreatedAt,

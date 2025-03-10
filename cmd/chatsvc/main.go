@@ -9,7 +9,6 @@ import (
 	"github.com/go-kratos/kratos/v2/config/file"
 	"github.com/go-kratos/kratos/v2/encoding/json"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/go-kratos/kratos/v2/middleware/tracing"
 	"github.com/go-kratos/kratos/v2/transport/http"
 	_ "go.uber.org/automaxprocs"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -60,8 +59,8 @@ func main() {
 		"service.id", id,
 		"service.name", Name,
 		"service.version", Version,
-		"trace.id", tracing.TraceID(),
-		"span.id", tracing.SpanID(),
+		// "trace.id", tracing.TraceID(),
+		// "span.id", tracing.SpanID(),
 	)
 	c := config.New(
 		config.WithSource(

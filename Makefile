@@ -1,6 +1,7 @@
 GOHOSTOS:=$(shell go env GOHOSTOS)
 GOPATH:=$(shell go env GOPATH)
 VERSION=$(shell git describe --tags --always)
+APP_NAME=$(shell basename $(PWD))
 
 ifeq ($(GOHOSTOS), windows)
 	#the `find.exe` is different from `find` in bash/shell.
@@ -60,7 +61,7 @@ errors:
 .PHONY: build
 # build
 build:
-	mkdir -p bin/ && go build -ldflags "-X main.Version=$(VERSION)" -o ./bin/ ./...
+	mkdir -p bin/ && go build -ldflags "-X main.Name=$(APP_NAME) -X main.Version=$(VERSION)" -o ./bin/ ./...
 
 .PHONY: generate
 # generate
@@ -99,3 +100,11 @@ data:
 			-outPath ./internal/data/query \
 			-fieldNullable true
 	go fmt ./internal/data
+
+.PHONY: docker
+# build
+docker:
+	docker build -t chatsvc:latest .
+	docker-compose -f ./docs/local/docker-compose.yaml down
+	docker image prune -f
+	docker-compose -f ./docs/local/docker-compose.yaml up -d

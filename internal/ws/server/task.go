@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/flightzw/chatsvc/internal/ws"
 	"github.com/redis/go-redis/v9"
+
+	"github.com/flightzw/chatsvc/internal/ws"
 )
 
 func listenMessagePushQueue(manager *MessageManager, gapTime time.Duration) {
@@ -49,7 +50,9 @@ func listenForceSignoutQueue(hub *SessionHub, gapTime time.Duration) {
 			hub.log.Error("redisClient.LPopCount:", err)
 			return
 		}
-
+		if len(results) > 0 {
+			hub.log.Infof("[force-signout-queue:%s] receive %d messages.", hub.serverID, len(results))
+		}
 		for _, sessionID := range results {
 			hub.removeSession(sessionID)
 		}

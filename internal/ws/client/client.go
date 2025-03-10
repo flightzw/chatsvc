@@ -60,8 +60,8 @@ func (c *ChatClient) GetResultNotifyChan(ctx context.Context) <-chan *ws.SendRes
 // 检查在线状态，返回在线 userIds
 func (c *ChatClient) IsOnline(ctx context.Context, userIds ...int32) map[int32]bool {
 	keys := make([]string, 0, len(userIds))
-	for _, userId := range userIds {
-		keys = append(keys, fmt.Sprintf(ws.RedisKeyUserServer, userId))
+	for _, userID := range userIds {
+		keys = append(keys, fmt.Sprintf(ws.RedisKeyUserServer, userID))
 	}
 	onlineMap := map[int32]bool{}
 	results, err := c.redisClient.MGet(ctx, keys...).Result()
@@ -69,9 +69,9 @@ func (c *ChatClient) IsOnline(ctx context.Context, userIds ...int32) map[int32]b
 		log.Error("redisClient.MGet", err)
 		return onlineMap
 	}
-	for idx, userId := range userIds {
+	for idx, userID := range userIds {
 		if results[idx] != nil {
-			onlineMap[userId] = true
+			onlineMap[userID] = true
 		}
 	}
 	return onlineMap
@@ -80,8 +80,8 @@ func (c *ChatClient) IsOnline(ctx context.Context, userIds ...int32) map[int32]b
 // 推送消息数据
 func (m *ChatClient) SendMessage(ctx context.Context, data *ws.MessageWrapper) error {
 	keys := make([]string, 0, len(data.RecvIds))
-	for _, recvId := range data.RecvIds {
-		keys = append(keys, fmt.Sprintf(ws.RedisKeyUserServer, recvId))
+	for _, recvID := range data.RecvIds {
+		keys = append(keys, fmt.Sprintf(ws.RedisKeyUserServer, recvID))
 	}
 	serverIds, err := m.redisClient.MGet(ctx, keys...).Result()
 	if err != nil {
@@ -89,13 +89,13 @@ func (m *ChatClient) SendMessage(ctx context.Context, data *ws.MessageWrapper) e
 	}
 
 	serverRecvMap := map[string][]int32{}
-	for idx, recvId := range data.RecvIds {
+	for idx, recvID := range data.RecvIds {
 		serverId, ok := serverIds[idx].(string)
 		if !ok {
-			m.log.Infof("user: %d not online, skip send step.", recvId)
+			m.log.Infof("user: %d not online, skip send step.", recvID)
 			continue
 		}
-		serverRecvMap[serverId] = append(serverRecvMap[serverId], recvId)
+		serverRecvMap[serverId] = append(serverRecvMap[serverId], recvID)
 	}
 
 	for serverId, recvIds := range serverRecvMap {

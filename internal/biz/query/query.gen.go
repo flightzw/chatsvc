@@ -80,3 +80,22 @@ func NewPrivateMessageQuery() *privateMessageQuery {
 		CreatedAt: field.NewTime(tableName, "created_at"),
 	}
 }
+
+type sensitiveWordQuery struct {
+	ID        field.Int32
+	Content   field.String // 敏感词内容
+	Enabled   field.Int32  // 是否启用 1:是 0:否
+	CreatedAt field.Time   // 创建时间
+	UpdatedAt field.Time   // 更新时间
+}
+
+func NewSensitiveWordQuery() *sensitiveWordQuery {
+	tableName := ""
+	return &sensitiveWordQuery{
+		ID:        field.NewInt32(tableName, "id"),
+		Content:   field.NewString(tableName, "content"),
+		Enabled:   field.NewInt32(tableName, "enabled"),
+		CreatedAt: field.NewTime(tableName, "created_at"),
+		UpdatedAt: field.NewTime(tableName, "updated_at"),
+	}
+}

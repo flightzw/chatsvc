@@ -25,14 +25,22 @@ func SignedString(method jwtv5.SigningMethod, id int32, name string, expireIn in
 }
 
 func GetUserInfo(ctx context.Context) (id int32, name string) {
+	claims, ok := GetRegisteredClaims(ctx)
+	if !ok {
+		return 0, ""
+	}
+	tmpId, _ := strconv.Atoi(claims.ID)
+	return int32(tmpId), claims.Subject
+}
+
+func GetRegisteredClaims(ctx context.Context) (*jwtv5.RegisteredClaims, bool) {
 	claims, ok := auth.FromContext(ctx)
 	if !ok {
-		return
+		return nil, ok
 	}
-	claimsImpl, ok := claims.(*jwtv5.RegisteredClaims)
+	rgtClaims, ok := claims.(*jwtv5.RegisteredClaims)
 	if !ok {
-		return
+		return nil, ok
 	}
-	tmpId, _ := strconv.Atoi(claimsImpl.ID)
-	return int32(tmpId), claimsImpl.Subject
+	return rgtClaims, ok
 }

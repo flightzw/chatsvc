@@ -75,12 +75,13 @@ func (h *SessionHub) Run() {
 func (hub *SessionHub) removeSession(sessionID string) {
 	session := hub.sessions[sessionID]
 	if session == nil {
+		hub.log.Infof("session [%s:%s] not found, no need signout", hub.serverID, sessionID)
 		return
 	}
 	err := session.conn.WriteJSON(ws.SendMessage{
 		Action: enum.ActionTypeSignout,
 		Data:   "已在其他地方登录，将强制退出",
 	})
-	session.conn.Close()
 	hub.log.Infof("session [%s:%s:%d] signout message send finished, error: %v", hub.serverID, sessionID, session.createTime.UnixNano(), err)
+	session.conn.Close()
 }

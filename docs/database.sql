@@ -40,3 +40,13 @@ CREATE TABLE IF NOT EXISTS `private_messages` (
   `created_at` timestamp NULL DEFAULT NULL COMMENT '创建时间',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='私聊消息';
+
+CREATE TABLE IF NOT EXISTS `sensitive_words` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `content` varchar(64) NOT NULL COMMENT '敏感词内容',
+  `enabled` tinyint NOT NULL DEFAULT 0 COMMENT '是否启用 1:是 0:否',
+  `created_at` timestamp NULL DEFAULT NULL COMMENT '创建时间',
+  `updated_at` timestamp NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_content` (`content`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='敏感词';

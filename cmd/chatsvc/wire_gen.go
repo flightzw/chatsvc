@@ -45,9 +45,15 @@ func wireApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*
 	userService := service.NewUserService(userUsecase)
 	loginService := service.NewLoginService(userUsecase)
 	privateMessageRepo := data.NewPrivateMessageRepo(dataData, logger)
-	privateMessageUsecase := biz.NewPrivateMessageUsecase(privateMessageRepo, friendRepo, userRepo, confServer, logger, chatClient)
+	sensitiveWordRepo := data.NewSensitiveWordRepo(dataData, logger)
+	filter, err := biz.InitSensitiveWordFiliter(logger, sensitiveWordRepo)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	privateMessageUsecase := biz.NewPrivateMessageUsecase(privateMessageRepo, friendRepo, userRepo, confServer, logger, chatClient, filter)
 	privateMessageService := service.NewPrivateMessageService(privateMessageUsecase)
-	httpServer := server2.NewHTTPServer(confServer, logger, sessionHub, friendService, userService, loginService, privateMessageService)
+	httpServer := server2.NewHTTPServer(confServer, logger, sessionHub, friendService, userService, loginService, privateMessageService, redisClient)
 	app := newApp(logger, httpServer)
 	return app, func() {
 		cleanup()

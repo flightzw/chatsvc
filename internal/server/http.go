@@ -10,6 +10,7 @@ import (
 	"github.com/go-kratos/kratos/v2/transport/http"
 	jwtv5 "github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/handlers"
+	"github.com/redis/go-redis/v9"
 
 	v1 "github.com/flightzw/chatsvc/api/chatsvc/v1"
 	"github.com/flightzw/chatsvc/internal/conf"
@@ -26,28 +27,27 @@ func NewHTTPServer(c *conf.Server, logger log.Logger,
 	userSvc *service.UserService,
 	loginSvc *service.LoginService,
 	messageSvc *service.PrivateMessageService,
+	redisClient *redis.Client,
 ) *http.Server {
-	signMethod := jwtv5.SigningMethodRS256
-	var opts = []http.ServerOption{
-		http.Middleware(
-			recovery.Recovery(),
-			middleware.Server(log.NewFilter(logger, log.FilterFunc(makeLogFilter()))),
-			middleware.MakeJwtMiddleware(signMethod, c.Jwt.AccessToken.Pubfile, jwt.NewClaims, []string{
-				v1.OperationLoginServiceLogin,
-				v1.OperationLoginServiceRegister,
-				v1.OperationLoginServiceRefreshToken,
-			}, false),
-			middleware.MakeJwtMiddleware(signMethod, c.Jwt.RefreshToken.Pubfile, jwt.NewClaims, []string{
-				v1.OperationLoginServiceRefreshToken,
-			}, true),
-			middleware.Validator(),
-		),
-		http.Filter(handlers.CORS(
-			handlers.AllowedOrigins([]string{"*"}),
-			handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
-			handlers.AllowedMethods([]string{"PUT", "POST", "GET", "DELETE", "OPTIONS"}),
-		)),
-	}
+	var (
+		authPaths    = []string{v1.OperationLoginServiceLogin, v1.OperationLoginServiceRegister, v1.OperationLoginServiceRefreshToken}
+		refreshPaths = []string{v1.OperationLoginServiceRefreshToken}
+		signMethod   = jwtv5.SigningMethodRS256
+		opts         = []http.ServerOption{
+			http.Middleware(
+				recovery.Recovery(),
+				middleware.Logger(log.NewFilter(logger, log.FilterFunc(makeLogFilter()))),
+				middleware.MakeJwtMiddleware(signMethod, c.Jwt.AccessToken.Pubfile, jwt.NewClaims, authPaths, false),
+				middleware.MakeJwtMiddleware(signMethod, c.Jwt.RefreshToken.Pubfile, jwt.NewClaims, refreshPaths, true),
+				middleware.Validator(redisClient),
+			),
+			http.Filter(handlers.CORS(
+				handlers.AllowedOrigins([]string{"*"}),
+				handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
+				handlers.AllowedMethods([]string{"PUT", "POST", "GET", "DELETE", "OPTIONS"}),
+			)),
+		}
+	)
 	if c.Http.Network != "" {
 		opts = append(opts, http.Network(c.Http.Network))
 	}

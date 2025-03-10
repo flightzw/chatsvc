@@ -14,6 +14,7 @@ require (
 	github.com/google/wire v0.6.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/websocket v1.5.3
+	github.com/importcjj/sensitive v0.0.0-20200106142752-42d1c505be7b
 	github.com/pkg/errors v0.9.1
 	go.uber.org/automaxprocs v1.6.0
 	golang.org/x/crypto v0.31.0
@@ -26,6 +27,8 @@ require (
 	gorm.io/plugin/dbresolver v1.5.3
 )
 
+require github.com/rogpeppe/go-internal v1.13.1 // indirect
+
 require (
 	cel.dev/expr v0.18.0 // indirect
 	dario.cat/mergo v1.0.1 // indirect
@@ -36,8 +39,6 @@ require (
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/go-kratos/aegis v0.2.0 // indirect
-	github.com/go-logr/logr v1.4.2 // indirect
-	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-playground/form/v4 v4.2.1 // indirect
 	github.com/go-sql-driver/mysql v1.8.1 // indirect
 	github.com/google/cel-go v0.22.1 // indirect
@@ -48,9 +49,8 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/redis/go-redis/v9 v9.7.0
 	github.com/stoewer/go-strcase v1.3.0 // indirect
-	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	github.com/vcaesar/cedar v0.20.2
 	go.opentelemetry.io/otel v1.33.0 // indirect
-	go.opentelemetry.io/otel/metric v1.33.0 // indirect
 	go.opentelemetry.io/otel/trace v1.33.0 // indirect
 	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 // indirect
 	golang.org/x/mod v0.22.0 // indirect

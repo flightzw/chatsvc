@@ -48,6 +48,7 @@ type UserRepo interface {
 	GetUserByUsername(ctx context.Context, username string) (data *User, err error)
 	ListUser(ctx context.Context, queryFunc query.QueryFunc, page, pageSize int) (data []*User, total int64, err error)
 	UpdateUser(ctx context.Context, id int32, data entity.AnyMap) (err error)
+	UpdateUserPassword(ctx context.Context, id int32, password string) (err error)
 
 	CountTodayCreateUserNum(ctx context.Context) (count int, err error)
 }
@@ -234,12 +235,12 @@ func (uc *UserUsecase) UpdatePassword(ctx context.Context, oldPassword, newPassw
 	if !hash.PasswordCheck(hashPassword, oldPassword, salt) {
 		return errno.ErrorParamInvalid("密码错误，请重新输入")
 	}
-	if err = uc.repo.UpdateUser(ctx, userID, entity.AnyMap{
-		"password": generatePasswordStr(newPassword),
-	}); err != nil {
-		return errno.ErrorDataUpdateFailed("修改密码时出错").WithCause(err)
-	}
-	return nil
+	return uc.repo.Transaction(ctx, func(ctx context.Context) error {
+		if err = uc.repo.UpdateUserPassword(ctx, userID, generatePasswordStr(newPassword)); err != nil {
+			return errno.ErrorDataUpdateFailed("修改密码时出错").WithCause(err)
+		}
+		return nil
+	})
 }
 
 func (uc *UserUsecase) generateUserToken(_ context.Context, user *User, rememberMe bool) (token, refreshToken string, err error) {
