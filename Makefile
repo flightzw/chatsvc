@@ -1,7 +1,6 @@
 GOHOSTOS:=$(shell go env GOHOSTOS)
 GOPATH:=$(shell go env GOPATH)
 VERSION=$(shell git describe --tags --always)
-APP_NAME=$(shell basename $(PWD))
 
 ifeq ($(GOHOSTOS), windows)
 	#the `find.exe` is different from `find` in bash/shell.
@@ -61,7 +60,7 @@ errors:
 .PHONY: build
 # build
 build:
-	mkdir -p bin/ && go build -ldflags "-X main.Name=$(APP_NAME) -X main.Version=$(VERSION)" -o ./bin/ ./...
+	mkdir -p bin/ && go build -ldflags "-X main.Name=chatsvc -X main.Version=$(VERSION)" -o ./bin/ ./...
 
 .PHONY: generate
 # generate
