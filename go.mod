@@ -8,6 +8,7 @@ require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.1-20241127180247-a33202765966.1
 	github.com/bufbuild/protovalidate-go v0.8.2
 	github.com/go-kratos/kratos/v2 v2.8.3
+	github.com/go-resty/resty/v2 v2.16.5
 	github.com/gogf/gf/v2 v2.8.3
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/gnostic v0.7.0
@@ -47,6 +48,7 @@ require (
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/redis/go-redis/v9 v9.7.0
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/vcaesar/cedar v0.20.2

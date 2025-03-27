@@ -3,11 +3,13 @@ package biz
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/flightzw/chatsvc/api/chatsvc/errno"
 	"github.com/flightzw/chatsvc/internal/biz/query"
@@ -15,7 +17,9 @@ import (
 	"github.com/flightzw/chatsvc/internal/entity"
 	"github.com/flightzw/chatsvc/internal/enum"
 	"github.com/flightzw/chatsvc/internal/utils/jwt"
+	"github.com/flightzw/chatsvc/internal/utils/openai"
 	"github.com/flightzw/chatsvc/internal/utils/stringx"
+	"github.com/flightzw/chatsvc/internal/utils/sync"
 	"github.com/flightzw/chatsvc/internal/vo"
 	"github.com/flightzw/chatsvc/internal/ws"
 	"github.com/flightzw/chatsvc/internal/ws/client"
@@ -50,25 +54,29 @@ type PrivateMessageRepo interface {
 
 type PrivateMessageUsecase struct {
 	repo       PrivateMessageRepo
-	friendRepo FriendRepo
 	userRepo   UserRepo
+	friendRepo FriendRepo
+	configRepo ConfigRepo
 
-	log        *log.Helper
-	conf       *conf.Server
-	filter     *stringx.Filter
-	chatClient *client.ChatClient
+	log         *log.Helper
+	conf        *conf.Server
+	filter      *stringx.Filter
+	redisClient *redis.Client
+	chatClient  *client.ChatClient
 }
 
-func NewPrivateMessageUsecase(repo PrivateMessageRepo, friendRepo FriendRepo, userRepo UserRepo, conf *conf.Server,
-	logger log.Logger, chatClient *client.ChatClient, filter *stringx.Filter) *PrivateMessageUsecase {
+func NewPrivateMessageUsecase(repo PrivateMessageRepo, friendRepo FriendRepo, userRepo UserRepo, configRepo ConfigRepo, conf *conf.Server,
+	logger log.Logger, chatClient *client.ChatClient, redisClient *redis.Client, filter *stringx.Filter) *PrivateMessageUsecase {
 	return &PrivateMessageUsecase{
-		repo:       repo,
-		friendRepo: friendRepo,
-		userRepo:   userRepo,
-		log:        log.NewHelper(log.With(logger, "module", "chatsvc/biz/PrivateMessageUsecase")),
-		chatClient: chatClient,
-		conf:       conf,
-		filter:     filter,
+		repo:        repo,
+		friendRepo:  friendRepo,
+		userRepo:    userRepo,
+		log:         log.NewHelper(log.With(logger, "module", "chatsvc/biz/PrivateMessageUsecase")),
+		chatClient:  chatClient,
+		conf:        conf,
+		filter:      filter,
+		redisClient: redisClient,
+		configRepo:  configRepo,
 	}
 }
 
@@ -85,6 +93,15 @@ func (uc *PrivateMessageUsecase) SendPrivateMessage(ctx context.Context, message
 	if _, err := uc.friendRepo.GetFriendByFriendID(ctx, message.SendID, message.RecvID); err != nil {
 		return nil, errno.ErrorParamInvalid("您不是对方好友，无法发送消息").WithCause(err)
 	}
+
+	configMap, err := uc.configRepo.GetConfigMap(ctx, conf.Getenv("AI_CONFIG_ID").(int32))
+	if err != nil {
+		return nil, errno.ErrorSystemInternalFailure("配置异常，服务暂不可用").WithCause(err)
+	}
+	if configVal, ok := configMap[fmt.Sprintf("user_%d", message.RecvID)]; ok {
+		return uc.sendAIChatMessage(ctx, message, configVal)
+	}
+
 	message.CreatedAt = gtime.Now()
 	id, err := uc.repo.CreatePrivateMessage(ctx, message)
 	if err != nil {
@@ -257,6 +274,53 @@ func (uc *PrivateMessageUsecase) ListPrivateMessage(ctx context.Context, params 
 		data = append(data, newPrivateMessageVO(uc.filter, msg))
 	}
 	return data, total, nil
+}
+
+func (uc *PrivateMessageUsecase) sendAIChatMessage(ctx context.Context, message *PrivateMessage, configVal string) (data *vo.PrivateMessageVO, err error) {
+	var (
+		userID, _       = jwt.GetUserInfo(ctx)
+		sendTime        = gtime.Now()
+		dateSec         = sendTime.StartOfDay().Unix() * int64(time.Second)
+		items           = strings.Split(configVal, ",")
+		lockKey         = fmt.Sprintf(_redisLockKeyAIChatLimit, message.RecvID)
+		lockVal         = fmt.Sprintf("%d:%d:", userID, message.RecvID)
+		redisLockAIChat = sync.NewRedisLock(uc.redisClient, lockKey, lockVal, 30*time.Second)
+	)
+	if len(items) != 2 {
+		return nil, errno.ErrorSystemInternalFailure("配置项异常，服务暂不可用")
+	}
+	redisLockAIChat.Lock(context.Background())
+	go func() {
+		defer redisLockAIChat.UnLock()
+		respMessage, err := getAIChatMessage(openai.ModelType(items[0]), items[1], userID, message.Content)
+		if err != nil {
+			respMessage = err.Error()
+			uc.log.Error("getAIChatMessage failed: ", err)
+		}
+		replyTime := gtime.Now()
+		err = uc.sendPrivateMessage(context.Background(), userID, &vo.PrivateMessageVO{
+			ID:        int32(replyTime.Add(-time.Duration(dateSec)).UnixMilli()),
+			SendID:    message.RecvID,
+			RecvID:    userID,
+			Content:   respMessage,
+			Type:      enum.MessageTypeAIChat,
+			Status:    enum.MessageStatusReaded,
+			CreatedAt: replyTime,
+		}, false)
+		if err != nil {
+			uc.log.Error("uc.sendPrivateMessage failed: ", err)
+		}
+	}()
+
+	return &vo.PrivateMessageVO{
+		ID:        int32(sendTime.Add(-time.Duration(dateSec)).UnixMilli()),
+		SendID:    userID,
+		RecvID:    message.RecvID,
+		Content:   uc.filter.Replace(message.Content, '*'),
+		Type:      message.Type,
+		Status:    enum.MessageStatusReaded,
+		CreatedAt: sendTime,
+	}, nil
 }
 
 func (uc *PrivateMessageUsecase) sendPrivateMessage(ctx context.Context, recvId int32, data *vo.PrivateMessageVO, useNotify bool) error {

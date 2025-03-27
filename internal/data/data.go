@@ -2,9 +2,11 @@ package data
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
+	gocache "github.com/patrickmn/go-cache"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -14,7 +16,16 @@ import (
 )
 
 // ProviderSet is data providers.
-var ProviderSet = wire.NewSet(NewData, NewDB, NewRedisClient, NewUserRepo, NewFriendRepo, NewPrivateMessageRepo, NewSensitiveWordRepo)
+var ProviderSet = wire.NewSet(
+	NewData,
+	NewDB,
+	NewRedisClient,
+	NewUserRepo,
+	NewFriendRepo,
+	NewPrivateMessageRepo,
+	NewSensitiveWordRepo,
+	NewConfigRepo,
+)
 
 type queryKey struct{}
 
@@ -23,6 +34,7 @@ type Data struct {
 	// TODO wrapped database client
 	db          *gorm.DB
 	redisClient *redis.Client
+	cache       *gocache.Cache
 	query       *query.Query
 }
 
@@ -56,6 +68,7 @@ func NewData(c *conf.Data, db *gorm.DB, redisClient *redis.Client, logger log.Lo
 		db:          db,
 		query:       query.Use(db),
 		redisClient: redisClient,
+		cache:       gocache.New(3*time.Minute, 2*time.Minute),
 	}, cleanup, nil
 }
 

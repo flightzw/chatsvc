@@ -8,9 +8,10 @@ type ActionType int
 const (
 	ActionTypeAuth           = iota + 1 // 登录认证
 	ActionTypeSignout                   // 注销
-	ActionTypeOfflinePush               // 离线消息推送标记
+	ActionTypeOfflinePush               // 消息推送
 	ActionTypePrivateMessage            // 私聊消息
 	ActionTypeSystemMessage             // 系统消息
+	ActionTypeAIChatMessage             // ai 聊天消息
 	ActionTypeMessageReaded             // 消息已读
 )
 
@@ -42,6 +43,7 @@ const (
 	MessageTypeVoice             // 语音消息
 	MessageTypeVideo             // 视频消息
 	MessageTypeSystem            // 系统消息
+	MessageTypeAIChat            // AI聊天消息
 )
 
 // 消息状态

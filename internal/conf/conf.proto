@@ -50,8 +50,12 @@ message Data {
     string password = 2;
     int32  db       = 3;
   }
+  message DBConfig {
+    int32 aiconfig_id = 1;
+  }
 
   string   env      = 1;
   Database database = 2;
   Redis    redis    = 3;
+  DBConfig dbconfig = 4;
 }

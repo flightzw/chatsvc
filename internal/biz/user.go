@@ -24,19 +24,20 @@ import (
 
 // User
 type User struct {
-	ID          int32              `json:"id"`
-	Username    string             `json:"username"`      // 用户名
-	Password    string             `json:"password"`      // 密码
-	AvatarURL   string             `json:"avatar_url"`    // 头像url
-	Nickname    string             `json:"nickname"`      // 昵称
-	Gender      int32              `json:"gender"`        // 性别：0未知，1男，2女
-	Signature   string             `json:"signature"`     // 个性签名
-	Status      enum.AccountStatus `json:"status"`        // 状态: 1正常，2封禁
-	LastLoginAt *gtime.Time        `json:"last_login_at"` // 最后上线时间
-	LastLoginIP string             `json:"last_login_ip"` // 最后上线ip
-	CreatedAt   *gtime.Time        `json:"created_at"`    // 创建时间
-	UpdatedAt   *gtime.Time        `json:"updated_at"`    // 更新时间
-	DeletedAt   *gtime.Time        `json:"deleted_at"`    // 删除时间
+	ID          int32           `json:"id"`
+	Username    string          `json:"username"`      // 用户名
+	Password    string          `json:"password"`      // 密码
+	AvatarURL   string          `json:"avatar_url"`    // 头像url
+	Nickname    string          `json:"nickname"`      // 昵称
+	Gender      int32           `json:"gender"`        // 性别：0未知，1男，2女
+	Signature   string          `json:"signature"`     // 个性签名
+	Type        enum.UserType   `json:"type"`          // 用户类型
+	Status      enum.UserStatus `json:"status"`        // 状态: 1正常，2封禁
+	LastLoginAt *gtime.Time     `json:"last_login_at"` // 最后上线时间
+	LastLoginIP string          `json:"last_login_ip"` // 最后上线ip
+	CreatedAt   *gtime.Time     `json:"created_at"`    // 创建时间
+	UpdatedAt   *gtime.Time     `json:"updated_at"`    // 更新时间
+	DeletedAt   *gtime.Time     `json:"deleted_at"`    // 删除时间
 }
 
 // UserRepo
@@ -105,14 +106,13 @@ func (uc *UserUsecase) Register(ctx context.Context, user *User) error {
 	}
 
 	user.Password = generatePasswordStr(user.Password)
-	user.Status = enum.AccountStatusNormal
+	user.Type = enum.UserTypeNormal
+	user.Status = enum.UserStatusNormal
 
-	return uc.repo.Transaction(ctx, func(ctx context.Context) error {
-		if _, err := uc.repo.CreateUser(ctx, user); err != nil {
-			return errno.ErrorUserRegisterFailed("用户注册时出错").WithCause(err)
-		}
-		return nil
-	})
+	if _, err := uc.repo.CreateUser(ctx, user); err != nil {
+		return errno.ErrorUserRegisterFailed("用户注册时出错").WithCause(err)
+	}
+	return nil
 }
 
 func (uc *UserUsecase) Login(ctx context.Context, user *User, rememberMe bool) (*vo.LoginVO, error) {
@@ -124,7 +124,7 @@ func (uc *UserUsecase) Login(ctx context.Context, user *User, rememberMe bool) (
 	if !hash.PasswordCheck(hashPassword, user.Password, salt) {
 		return nil, errno.ErrorUserNotFound("用户名或密码错误")
 	}
-	if data.Status != enum.AccountStatusNormal {
+	if data.Status != enum.UserStatusNormal {
 		return nil, errno.ErrorParamInvalid(fmt.Sprintf("账号异常（状态：%s）", data.Status.Map()))
 	}
 

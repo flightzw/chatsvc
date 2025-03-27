@@ -1,19 +1,29 @@
 package enum
 
-type AccountStatus int32
+// 用户类型
+type UserType int32
 
 const (
-	AccountStatusNotEnable AccountStatus = iota // 未启用
-	AccountStatusNormal                         // 正常
-	AccountStatusBan                            // 封禁
+	UserTypeNormal  UserType = iota + 1 // 普通用户
+	UserTypeAI                          // AI
+	UserTypeManager                     // 管理员
 )
 
-var _AccountStatusMap = map[AccountStatus]string{
-	AccountStatusNotEnable: "未启用",
-	AccountStatusNormal:    "正常",
-	AccountStatusBan:       "已封禁",
+// 用户状态
+type UserStatus int32
+
+const (
+	UserStatusNotEnable UserStatus = iota // 未启用
+	UserStatusNormal                      // 正常
+	UserStatusBan                         // 封禁
+)
+
+var _UserStatusMap = map[UserStatus]string{
+	UserStatusNotEnable: "未启用",
+	UserStatusNormal:    "正常",
+	UserStatusBan:       "已封禁",
 }
 
-func (x AccountStatus) Map() string {
-	return _AccountStatusMap[x]
+func (x UserStatus) Map() string {
+	return _UserStatusMap[x]
 }

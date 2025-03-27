@@ -33,6 +33,7 @@ type userSession struct {
 	createTime *gtime.Time
 	hub        *SessionHub
 	conn       *websocket.Conn
+	aiConn     *websocket.Conn
 	sendChan   chan *ws.MessageWrapper
 }
 

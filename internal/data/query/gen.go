@@ -18,6 +18,7 @@ import (
 func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 	return &Query{
 		db:             db,
+		Config:         newConfig(db, opts...),
 		Friend:         newFriend(db, opts...),
 		PrivateMessage: newPrivateMessage(db, opts...),
 		SensitiveWord:  newSensitiveWord(db, opts...),
@@ -28,6 +29,7 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 type Query struct {
 	db *gorm.DB
 
+	Config         config
 	Friend         friend
 	PrivateMessage privateMessage
 	SensitiveWord  sensitiveWord
@@ -39,6 +41,7 @@ func (q *Query) Available() bool { return q.db != nil }
 func (q *Query) clone(db *gorm.DB) *Query {
 	return &Query{
 		db:             db,
+		Config:         q.Config.clone(db),
 		Friend:         q.Friend.clone(db),
 		PrivateMessage: q.PrivateMessage.clone(db),
 		SensitiveWord:  q.SensitiveWord.clone(db),
@@ -57,6 +60,7 @@ func (q *Query) WriteDB() *Query {
 func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 	return &Query{
 		db:             db,
+		Config:         q.Config.replaceDB(db),
 		Friend:         q.Friend.replaceDB(db),
 		PrivateMessage: q.PrivateMessage.replaceDB(db),
 		SensitiveWord:  q.SensitiveWord.replaceDB(db),
@@ -65,6 +69,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 }
 
 type queryCtx struct {
+	Config         *configDo
 	Friend         *friendDo
 	PrivateMessage *privateMessageDo
 	SensitiveWord  *sensitiveWordDo
@@ -73,6 +78,7 @@ type queryCtx struct {
 
 func (q *Query) WithContext(ctx context.Context) *queryCtx {
 	return &queryCtx{
+		Config:         q.Config.WithContext(ctx),
 		Friend:         q.Friend.WithContext(ctx),
 		PrivateMessage: q.PrivateMessage.WithContext(ctx),
 		SensitiveWord:  q.SensitiveWord.WithContext(ctx),

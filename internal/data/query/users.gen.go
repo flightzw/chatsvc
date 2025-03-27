@@ -34,6 +34,7 @@ func newUser(db *gorm.DB, opts ...gen.DOOption) user {
 	_user.Nickname = field.NewString(tableName, "nickname")
 	_user.Gender = field.NewInt32(tableName, "gender")
 	_user.Signature = field.NewString(tableName, "signature")
+	_user.Type = field.NewInt32(tableName, "type")
 	_user.Status = field.NewInt32(tableName, "status")
 	_user.LastLoginAt = field.NewTime(tableName, "last_login_at")
 	_user.LastLoginIP = field.NewString(tableName, "last_login_ip")
@@ -58,6 +59,7 @@ type user struct {
 	Nickname    field.String // 昵称
 	Gender      field.Int32  // 性别：0未知，1男，2女
 	Signature   field.String // 个性签名
+	Type        field.Int32  // 类型 1:普通用户 2:AI模型 3管理员
 	Status      field.Int32  // 状态: 1正常，2封禁
 	LastLoginAt field.Time   // 最后上线时间
 	LastLoginIP field.String // 最后上线ip
@@ -87,6 +89,7 @@ func (u *user) updateTableName(table string) *user {
 	u.Nickname = field.NewString(table, "nickname")
 	u.Gender = field.NewInt32(table, "gender")
 	u.Signature = field.NewString(table, "signature")
+	u.Type = field.NewInt32(table, "type")
 	u.Status = field.NewInt32(table, "status")
 	u.LastLoginAt = field.NewTime(table, "last_login_at")
 	u.LastLoginIP = field.NewString(table, "last_login_ip")
@@ -117,7 +120,7 @@ func (u *user) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (u *user) fillFieldMap() {
-	u.fieldMap = make(map[string]field.Expr, 13)
+	u.fieldMap = make(map[string]field.Expr, 14)
 	u.fieldMap["id"] = u.ID
 	u.fieldMap["username"] = u.Username
 	u.fieldMap["password"] = u.Password
@@ -125,6 +128,7 @@ func (u *user) fillFieldMap() {
 	u.fieldMap["nickname"] = u.Nickname
 	u.fieldMap["gender"] = u.Gender
 	u.fieldMap["signature"] = u.Signature
+	u.fieldMap["type"] = u.Type
 	u.fieldMap["status"] = u.Status
 	u.fieldMap["last_login_at"] = u.LastLoginAt
 	u.fieldMap["last_login_ip"] = u.LastLoginIP

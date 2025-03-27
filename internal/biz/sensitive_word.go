@@ -69,13 +69,16 @@ func InitSensitiveWordFiliter(logger log.Logger, repo SensitiveWordRepo) (*strin
 					dels = append(dels, word.Content)
 				}
 			}
-			if len(adds) > 0 {
+			addNum, delNum := len(adds), len(dels)
+			if addNum > 0 {
 				filter.AddWord(adds...)
 			}
-			if len(dels) > 0 {
+			if delNum > 0 {
 				filter.DelWord(dels...)
 			}
-			helper.Infof("sync filter sensitive words config success, add: %d, del: %d", len(adds), len(dels))
+			if addNum > 0 || delNum > 0 {
+				helper.Infof("sync filter sensitive words config success, add: %d, del: %d", len(adds), len(dels))
+			}
 		}
 	}()
 	return filter, nil

@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `nickname` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '昵称',
   `gender` tinyint NOT NULL DEFAULT '0' COMMENT '性别 0:未知 1:男 2:女',
   `signature` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '个性签名',
+  `type` tinyint unsigned NOT NULL COMMENT '类型 1:普通用户 2:AI模型 3管理员',
   `status` tinyint unsigned NOT NULL COMMENT '状态 1:正常 2:封禁',
   `last_login_at` timestamp NULL DEFAULT NULL COMMENT '最后上线时间',
   `last_login_ip` varchar(15) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '最后上线ip',
@@ -50,3 +51,15 @@ CREATE TABLE IF NOT EXISTS `sensitive_words` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_content` (`content`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='敏感词';
+
+CREATE TABLE IF NOT EXISTS `configs` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `parent_id` int unsigned NOT NULL COMMENT '上级配置 id',
+  `key` varchar(20) NOT NULL COMMENT '配置名称',
+  `value` varchar(1024) NOT NULL COMMENT '配置参数',
+  `comment` varchar(20) NOT NULL COMMENT '备注',
+  `created_at` timestamp NULL DEFAULT NULL COMMENT '创建时间',
+  `updated_at` timestamp NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_parent_id_key` (`parent_id`, `key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='配置项';

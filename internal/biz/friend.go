@@ -9,6 +9,7 @@ import (
 	"github.com/flightzw/chatsvc/api/chatsvc/errno"
 	"github.com/flightzw/chatsvc/internal/biz/query"
 	"github.com/flightzw/chatsvc/internal/entity"
+	"github.com/flightzw/chatsvc/internal/enum"
 	"github.com/flightzw/chatsvc/internal/utils/jwt"
 	"github.com/flightzw/chatsvc/internal/vo"
 	"github.com/flightzw/chatsvc/internal/ws/client"
@@ -176,8 +177,12 @@ func (uc *FriendUsecase) getUserMap(ctx context.Context, ids []int32) (map[int32
 }
 
 func newFriendVO(user *User, remark string, isOnline bool) *vo.FriendVO {
+	if user.Type == enum.UserTypeAI {
+		isOnline = true
+	}
 	return &vo.FriendVO{
 		ID:        user.ID,
+		Type:      user.Type,
 		Username:  user.Username,
 		Nickname:  user.Nickname,
 		AvatarUrl: user.AvatarURL,

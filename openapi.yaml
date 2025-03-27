@@ -6,6 +6,25 @@ info:
     title: ""
     version: 0.0.1
 paths:
+    /chatsvc/v1/aichat/send-messages:
+        post:
+            tags:
+                - AIChatService
+            description: 发送消息
+            operationId: AIChatService_SendMessage
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/chatsvc.v1.SendMessageRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/chatsvc.v1.SendMessageReply'
     /chatsvc/v1/friends:
         get:
             tags:
@@ -381,6 +400,9 @@ components:
                 id:
                     type: integer
                     format: int32
+                type:
+                    type: integer
+                    format: int32
                 username:
                     type: string
                 avatar_url:
@@ -534,6 +556,21 @@ components:
         chatsvc.v1.RemoveFriendReply:
             type: object
             properties: {}
+        chatsvc.v1.SendMessageReply:
+            type: object
+            properties: {}
+        chatsvc.v1.SendMessageRequest:
+            type: object
+            properties:
+                recv_id:
+                    type: integer
+                    format: int32
+                content:
+                    type: string
+                offset:
+                    type: integer
+                    description: 消息id偏移量
+                    format: int32
         chatsvc.v1.SendPrivateMessageReply:
             type: object
             properties:
@@ -609,6 +646,7 @@ components:
                 is_online:
                     type: boolean
 tags:
+    - name: AIChatService
     - name: FriendService
     - name: LoginService
       description: 登录模块

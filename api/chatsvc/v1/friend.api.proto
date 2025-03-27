@@ -45,13 +45,14 @@ service FriendService {
 
 message FriendVO {
   int32  id         = 1;
-  string username   = 2;
-  string avatar_url = 3;
-  string nickname   = 4;
-  int32  gender     = 5;
-  string signature  = 6;
-  bool   is_online  = 7;
-  string remark     = 8;
+  int32  type       = 2;
+  string username   = 3;
+  string avatar_url = 4;
+  string nickname   = 5;
+  int32  gender     = 6;
+  string signature  = 7;
+  bool   is_online  = 8;
+  string remark     = 9;
 }
 
 message AddFriendRequest {
