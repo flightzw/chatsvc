@@ -64,3 +64,10 @@ func extractError(err error) (log.Level, string) {
 	}
 	return log.LevelInfo, ""
 }
+
+func SetLogInfoToContext(ctx context.Context, userID int32) {
+	infoMap, ok := ctx.Value(logInfoKey{}).(map[string]any)
+	if ok {
+		infoMap["uid"] = userID
+	}
+}

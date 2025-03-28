@@ -28,8 +28,11 @@ func getAIChatMessage(modelType openai.ModelType, apikey string, userID int32, m
 	}
 	reply, err := client.ChatCompletion(context.Background(),
 		&openai.ChatCompletionRequest{
-			Model:    modelType,
-			Messages: []*openai.Message{{Content: message, Role: openai.RoleTypeUser}}},
+			Model: modelType,
+			Messages: []*openai.Message{{
+				Content: message,
+				Role:    openai.RoleTypeUser,
+			}}},
 		&openai.ChatOptions{
 			UserID: userID,
 		})

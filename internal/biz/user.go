@@ -227,6 +227,10 @@ func (uc *UserUsecase) UpdatePassword(ctx context.Context, oldPassword, newPassw
 	}
 
 	userID, _ := jwt.GetUserInfo(ctx)
+	if userID == 10001 {
+		return errno.ErrorParamInvalid("此账号不支持修改密码")
+	}
+
 	data, err := uc.repo.GetUser(ctx, userID)
 	if err != nil {
 		return errno.ErrorUserNotFound("获取用户信息时出错").WithCause(err)

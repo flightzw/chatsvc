@@ -280,10 +280,9 @@ func (uc *PrivateMessageUsecase) sendAIChatMessage(ctx context.Context, message 
 	var (
 		userID, _       = jwt.GetUserInfo(ctx)
 		sendTime        = gtime.Now()
-		dateSec         = sendTime.StartOfDay().Unix() * int64(time.Second)
 		items           = strings.Split(configVal, ",")
 		lockKey         = fmt.Sprintf(_redisLockKeyAIChatLimit, message.RecvID)
-		lockVal         = fmt.Sprintf("%d:%d:", userID, message.RecvID)
+		lockVal         = fmt.Sprintf("%d:%d", userID, message.RecvID)
 		redisLockAIChat = sync.NewRedisLock(uc.redisClient, lockKey, lockVal, 30*time.Second)
 	)
 	if len(items) != 2 {
@@ -299,7 +298,6 @@ func (uc *PrivateMessageUsecase) sendAIChatMessage(ctx context.Context, message 
 		}
 		replyTime := gtime.Now()
 		err = uc.sendPrivateMessage(context.Background(), userID, &vo.PrivateMessageVO{
-			ID:        int32(replyTime.Add(-time.Duration(dateSec)).UnixMilli()),
 			SendID:    message.RecvID,
 			RecvID:    userID,
 			Content:   respMessage,
@@ -311,9 +309,7 @@ func (uc *PrivateMessageUsecase) sendAIChatMessage(ctx context.Context, message 
 			uc.log.Error("uc.sendPrivateMessage failed: ", err)
 		}
 	}()
-
 	return &vo.PrivateMessageVO{
-		ID:        int32(sendTime.Add(-time.Duration(dateSec)).UnixMilli()),
 		SendID:    userID,
 		RecvID:    message.RecvID,
 		Content:   uc.filter.Replace(message.Content, '*'),
